@@ -291,7 +291,7 @@ export class PluginManagerModal extends Modal {
                 id: pluginId,
                 name: plugin.name,
                 version: plugin.version,
-                author: plugin.author || '未知作者',
+                author: (plugin.author && plugin.author.trim()) || '未知作者',
                 description: plugin.description || '',
                 isDesktopOnly: plugin.isDesktopOnly || false,
                 enabled: enabled,
@@ -481,9 +481,12 @@ export class PluginManagerModal extends Modal {
         if (this.renamingSnippet?.name === snippet.name) {
             // 显示重命名输入框
             const input = header.createEl('input', {
-                cls: 'albus-obsidianx-rename-input',
+                type: 'text',
                 value: this.renamingSnippet.newName
             });
+            input.style.width = '100%';
+            input.style.padding = '4px 8px';
+            input.style.fontSize = 'var(--font-ui-medium)';
             
             input.addEventListener('input', (e) => {
                 if (this.renamingSnippet) {
@@ -1113,13 +1116,14 @@ export class PluginManagerModal extends Modal {
         setIcon(icon, 'package');
         
         const title = emptyState.createEl('h3');
-        title.textContent = '未找到插件';
+        const isCSSGroup = this.selectedGroup.startsWith('css-');
+        title.textContent = isCSSGroup ? '未找到CSS片段' : '未找到插件';
         
         const description = emptyState.createEl('p');
         if (this.searchTerm || this.filterEnabled !== 'all' || this.selectedGroup !== 'all') {
             description.textContent = '尝试调整搜索条件或筛选状态';
         } else {
-            description.textContent = '没有安装任何插件';
+            description.textContent = isCSSGroup ? '没有任何CSS片段' : '没有安装任何插件';
         }
     }
 
@@ -1236,46 +1240,27 @@ class UninstallConfirmModal extends Modal {
 
     onOpen() {
         const { contentEl } = this;
-        contentEl.addClass('albus-obsidianx-modal-overlay');
+        contentEl.empty();
 
-        const modal = contentEl.createDiv('albus-obsidianx-modal');
+        contentEl.createEl('h2', { text: '卸载插件' });
 
-        // 头部
-        const header = modal.createDiv('albus-obsidianx-modal-header');
-        const title = header.createEl('h3');
-        title.textContent = '确认卸载插件';
-        
-        const closeBtn = header.createEl('button');
-        const closeIcon = closeBtn.createSpan();
-        setIcon(closeIcon, 'x');
-        closeBtn.addEventListener('click', () => this.close());
-
-        // 内容
-        const body = modal.createDiv('albus-obsidianx-modal-body');
-        const message = body.createEl('p');
+        const message = contentEl.createEl('p');
         message.textContent = `确定要卸载插件 "`;
         const pluginName = message.createEl('strong');
         pluginName.textContent = this.plugin.name;
         message.appendText('" 吗？');
+        message.style.marginTop = '12px';
+        message.style.marginBottom = '16px';
 
-        const warning = body.createEl('p', { cls: 'albus-obsidianx-warning-text' });
-        const warningIcon = warning.createSpan();
-        setIcon(warningIcon, 'alert-triangle');
-        warning.appendText('此操作不可逆，卸载后将删除插件的所有文件和数据。');
+        const buttonContainer = contentEl.createDiv();
+        buttonContainer.style.display = 'flex';
+        buttonContainer.style.justifyContent = 'flex-end';
+        buttonContainer.style.gap = '8px';
 
-        // 底部
-        const footer = modal.createDiv('albus-obsidianx-modal-footer');
-        
-        const cancelBtn = footer.createEl('button', {
-            text: '取消',
-            cls: 'albus-obsidianx-cancel-button'
-        });
+        const cancelBtn = buttonContainer.createEl('button', { text: '取消' });
         cancelBtn.addEventListener('click', () => this.close());
 
-        const confirmBtn = footer.createEl('button', {
-            text: '确认卸载',
-            cls: 'albus-obsidianx-confirm-button'
-        });
+        const confirmBtn = buttonContainer.createEl('button', { text: '卸载', cls: 'mod-warning' });
         confirmBtn.addEventListener('click', () => {
             this.onConfirm();
             this.close();

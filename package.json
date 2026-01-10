@@ -1,6 +1,6 @@
 {
 	"name": "albus-obsidianx",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "A powerful Obsidian plugin for snippets and plugins management.",
 	"main": "main.js",
 	"type": "module",
