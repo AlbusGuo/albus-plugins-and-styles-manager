@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, Notice, Modal, setIcon } from 'obsidian';
+import { App, PluginSettingTab, Setting, Notice, Modal, ButtonComponent, setIcon, SettingGroup } from 'obsidian';
 import ObsidianXPlugin from './main';
 import { DataStorage } from './data-storage';
 
@@ -7,8 +7,11 @@ import { DataStorage } from './data-storage';
  */
 export class GroupManagementSettingTab extends PluginSettingTab {
     plugin: ObsidianXPlugin;
+
+    icon: string = 'cog';
+
     private dataStorage: DataStorage;
-    private editingGroup: { key: string; name: string } | null = null;
+    private editingGroup: { type: 'plugin' | 'css'; key: string; value: string } | null = null;
 
     constructor(app: App, plugin: ObsidianXPlugin, dataStorage: DataStorage) {
         super(app, plugin);
@@ -24,112 +27,228 @@ export class GroupManagementSettingTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName('插件分组')
             .setHeading();
-        this.displayGroupList(containerEl, 'plugin');
-        this.displayAddGroup(containerEl, 'plugin');
+        
+        this.displayPluginGroups(containerEl);
 
         // CSS片段分组
         new Setting(containerEl)
-            .setName('CSS片段分组')
+            .setName('CSS 片段分组')
             .setHeading();
-        this.displayGroupList(containerEl, 'css');
-        this.displayAddGroup(containerEl, 'css');
+        
+        this.displayCSSGroups(containerEl);
     }
 
     /**
-     * 显示分组列表
+     * 显示插件分组
      */
-    private displayGroupList(containerEl: HTMLElement, type: 'plugin' | 'css'): void {
-        const groups = type === 'plugin' 
-            ? this.dataStorage.getSettings().groups 
-            : this.dataStorage.getSettings().cssGroups;
+    private displayPluginGroups(containerEl: HTMLElement): void {
+        const groupContainer = containerEl.createDiv();
+        const settingGroup = new SettingGroup(groupContainer);
+
+        const groups = this.dataStorage.getSettings().groups;
         const editableGroups = Object.keys(groups).filter(key => key !== 'all' && key !== 'other');
 
+        // 分组列表
         if (editableGroups.length === 0) {
-            // 空状态下不显示任何内容，避免多余分割线
-            return;
-        }
-
-        editableGroups.forEach(groupKey => {
-            const groupName = groups[groupKey] || '';
-            this.displayGroupItem(containerEl, groupKey, groupName, type);
-        });
-    }
-
-    /**
-     * 显示分组项
-     */
-    private displayGroupItem(parent: HTMLElement, groupKey: string, groupName: string, type: 'plugin' | 'css'): void {
-        const item = parent.createDiv('albus-obsidianx-group-item');
-
-        // 内容区域
-        const content = item.createDiv('albus-obsidianx-group-item-content');
-
-        if (this.editingGroup?.key === groupKey) {
-            // 编辑模式
-            const editInput = content.createDiv('albus-obsidianx-group-edit-input');
-            const input = editInput.createEl('input', {
-                type: 'text',
-                cls: 'albus-obsidianx-group-name-input',
-                value: this.editingGroup.name
+            settingGroup.addSetting((setting) => {
+                setting
+                    .setName('暂无自定义分组')
+                    .setClass('obsidianx-empty-message');
             });
-
-            input.addEventListener('input', (e) => {
-                if (this.editingGroup) {
-                    this.editingGroup.name = (e.target as HTMLInputElement).value;
-                }
-            });
-
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    this.updateGroup(groupKey, type);
-                } else if (e.key === 'Escape') {
-                    this.editingGroup = null;
-                    this.display();
-                }
-            });
-
-            input.addEventListener('blur', () => {
-                this.updateGroup(groupKey, type);
-            });
-
-            // 自动聚焦
-            setTimeout(() => input.focus(), 0);
         } else {
-            // 显示模式
-            const display = content.createDiv('albus-obsidianx-group-name-display');
-            display.textContent = groupName;
-            display.addEventListener('click', () => {
-                this.editingGroup = { key: groupKey, name: groupName };
-                this.display();
+            editableGroups.forEach(groupKey => {
+                const groupName = groups[groupKey] || '';
+                const isEditing = this.editingGroup?.type === 'plugin' && this.editingGroup?.key === groupKey;
+                
+                settingGroup.addSetting((setting) => {
+                    if (isEditing) {
+                        // 编辑模式
+                        setting.addText((text) => {
+                            text
+                                .setValue(this.editingGroup!.value)
+                                .onChange((value) => {
+                                    if (this.editingGroup) {
+                                        this.editingGroup.value = value;
+                                    }
+                                });
+                            
+                            // 自动聚焦
+                            setTimeout(() => {
+                                text.inputEl.focus();
+                                text.inputEl.select();
+                            }, 0);
+                            
+                            // 键盘事件
+                            text.inputEl.addEventListener('keydown', (e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    this.saveEdit(groupKey, 'plugin');
+                                } else if (e.key === 'Escape') {
+                                    this.cancelEdit();
+                                }
+                            });
+                            
+                            // 失去焦点时保存
+                            text.inputEl.addEventListener('blur', () => {
+                                this.saveEdit(groupKey, 'plugin');
+                            });
+                        });
+                    } else {
+                        // 显示模式
+                        setting
+                            .setName(groupName)
+                            .addExtraButton((button) => {
+                                button
+                                    .setIcon('trash-2')
+                                    .setTooltip('删除分组')
+                                    .onClick(async () => {
+                                        await this.deleteGroup(groupKey, 'plugin');
+                                    });
+                            });
+                        
+                        // 点击名称进入编辑
+                        setting.nameEl.style.cursor = 'pointer';
+                        setting.nameEl.addEventListener('click', () => {
+                            this.editingGroup = { type: 'plugin', key: groupKey, value: groupName };
+                            this.display();
+                        });
+                    }
+                });
             });
         }
 
-        // 操作按钮
-        const actions = item.createDiv('albus-obsidianx-group-item-actions');
-        const deleteBtn = actions.createEl('button', {
-            cls: 'albus-obsidianx-group-delete-button',
-            title: '删除分组'
-        });
-        setIcon(deleteBtn, 'trash-2');
-        
-        deleteBtn.addEventListener('click', () => {
-            this.deleteGroup(groupKey, type);
-        });
-    }
-
-    /**
-     * 显示添加分组按钮
-     */
-    private displayAddGroup(containerEl: HTMLElement, type: 'plugin' | 'css'): void {
-        new Setting(containerEl)
-            .addButton(button => {
+        // 添加按钮
+        settingGroup.addSetting((setting) => {
+            setting.addButton((button: ButtonComponent) => {
                 button
-                    .setButtonText(type === 'plugin' ? '添加插件分组' : '添加CSS片段分组')
+                    .setButtonText('添加插件分组')
                     .setCta()
                     .onClick(() => {
-                        this.showAddGroupDialog(type);
+                        this.showAddGroupDialog('plugin');
                     });
             });
+        });
+    }
+
+    /**
+     * 显示CSS片段分组
+     */
+    private displayCSSGroups(containerEl: HTMLElement): void {
+        const groupContainer = containerEl.createDiv();
+        const settingGroup = new SettingGroup(groupContainer);
+
+        const groups = this.dataStorage.getSettings().cssGroups;
+        const editableGroups = Object.keys(groups).filter(key => key !== 'all' && key !== 'other');
+
+        // 分组列表
+        if (editableGroups.length === 0) {
+            settingGroup.addSetting((setting) => {
+                setting
+                    .setName('暂无自定义分组')
+                    .setClass('obsidianx-empty-message');
+            });
+        } else {
+            editableGroups.forEach(groupKey => {
+                const groupName = groups[groupKey] || '';
+                const isEditing = this.editingGroup?.type === 'css' && this.editingGroup?.key === groupKey;
+                
+                settingGroup.addSetting((setting) => {
+                    if (isEditing) {
+                        // 编辑模式
+                        setting.addText((text) => {
+                            text
+                                .setValue(this.editingGroup!.value)
+                                .onChange((value) => {
+                                    if (this.editingGroup) {
+                                        this.editingGroup.value = value;
+                                    }
+                                });
+                            
+                            // 自动聚焦
+                            setTimeout(() => {
+                                text.inputEl.focus();
+                                text.inputEl.select();
+                            }, 0);
+                            
+                            // 键盘事件
+                            text.inputEl.addEventListener('keydown', (e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    this.saveEdit(groupKey, 'css');
+                                } else if (e.key === 'Escape') {
+                                    this.cancelEdit();
+                                }
+                            });
+                            
+                            // 失去焦点时保存
+                            text.inputEl.addEventListener('blur', () => {
+                                this.saveEdit(groupKey, 'css');
+                            });
+                        });
+                    } else {
+                        // 显示模式
+                        setting
+                            .setName(groupName)
+                            .addExtraButton((button) => {
+                                button
+                                    .setIcon('trash-2')
+                                    .setTooltip('删除分组')
+                                    .onClick(async () => {
+                                        await this.deleteGroup(groupKey, 'css');
+                                    });
+                            });
+                        
+                        // 点击名称进入编辑
+                        setting.nameEl.style.cursor = 'pointer';
+                        setting.nameEl.addEventListener('click', () => {
+                            this.editingGroup = { type: 'css', key: groupKey, value: groupName };
+                            this.display();
+                        });
+                    }
+                });
+            });
+        }
+
+        // 添加按钮
+        settingGroup.addSetting((setting) => {
+            setting.addButton((button: ButtonComponent) => {
+                button
+                    .setButtonText('添加 CSS 分组')
+                    .setCta()
+                    .onClick(() => {
+                        this.showAddGroupDialog('css');
+                    });
+            });
+        });
+    }
+
+    /**
+     * 保存编辑
+     */
+    private async saveEdit(groupKey: string, type: 'plugin' | 'css'): Promise<void> {
+        if (!this.editingGroup) return;
+        
+        const newName = this.editingGroup.value.trim();
+        if (!newName) {
+            new Notice('分组名称不能为空');
+            this.cancelEdit();
+            return;
+        }
+        
+        if (newName !== this.editingGroup.value) {
+            await this.updateGroupName(groupKey, newName, type);
+        }
+        
+        this.editingGroup = null;
+        this.display();
+    }
+
+    /**
+     * 取消编辑
+     */
+    private cancelEdit(): void {
+        this.editingGroup = null;
+        this.display();
     }
 
     /**
@@ -138,7 +257,6 @@ export class GroupManagementSettingTab extends PluginSettingTab {
     private showAddGroupDialog(type: 'plugin' | 'css'): void {
         const modal = new AddGroupModal(this.app, type, async (groupName) => {
             await this.addGroup(groupName, type);
-            this.display();
         });
         modal.open();
     }
@@ -157,66 +275,46 @@ export class GroupManagementSettingTab extends PluginSettingTab {
             ? this.dataStorage.getSettings().groups 
             : this.dataStorage.getSettings().cssGroups;
 
-        // 检查是否已存在
         if (groups[groupKey]) {
             new Notice('分组已存在');
             return;
         }
 
-        const updatedGroups = {
-            ...groups,
-            [groupKey]: groupName.trim()
-        };
+        const updatedGroups = { ...groups, [groupKey]: groupName.trim() };
 
         if (type === 'plugin') {
             await this.dataStorage.updateGroups(updatedGroups);
         } else {
             await this.dataStorage.updateCSSGroups(updatedGroups);
         }
-        new Notice(`分组"${groupName}"添加成功`);
+        
+        new Notice(`已添加分组"${groupName}"`);
         this.display();
     }
 
     /**
-     * 更新分组
+     * 更新分组名称
      */
-    private async updateGroup(groupKey: string, type: 'plugin' | 'css'): Promise<void> {
-        if (!this.editingGroup) return;
-
-        const newName = this.editingGroup.name.trim();
-        
-        if (!newName) {
-            new Notice('分组名称不能为空');
-            this.editingGroup = null;
-            this.display();
-            return;
-        }
-
+    private async updateGroupName(groupKey: string, newName: string, type: 'plugin' | 'css'): Promise<void> {
         const groups = type === 'plugin' 
             ? this.dataStorage.getSettings().groups 
             : this.dataStorage.getSettings().cssGroups;
-        const updatedGroups = { ...groups };
-        updatedGroups[groupKey] = newName;
+        
+        const updatedGroups = { ...groups, [groupKey]: newName };
 
         if (type === 'plugin') {
             await this.dataStorage.updateGroups(updatedGroups);
         } else {
             await this.dataStorage.updateCSSGroups(updatedGroups);
         }
-        new Notice('分组更新成功');
-        this.editingGroup = null;
-        this.display();
+        
+        new Notice('分组名称已更新');
     }
 
     /**
      * 删除分组
      */
     private async deleteGroup(groupKey: string, type: 'plugin' | 'css'): Promise<void> {
-        if (groupKey === 'all' || groupKey === 'other') {
-            new Notice('系统分组不能被删除');
-            return;
-        }
-
         const settings = this.dataStorage.getSettings();
         const groups = type === 'plugin' ? settings.groups : settings.cssGroups;
         const updatedGroups = { ...groups };
@@ -227,38 +325,25 @@ export class GroupManagementSettingTab extends PluginSettingTab {
             
             // 将该分组的插件移动到"其他"分组
             const metadata = settings.metadata;
-            let updated = false;
-
             for (const pluginId in metadata) {
-                if (metadata[pluginId] && metadata[pluginId].group === groupKey) {
+                if (metadata[pluginId]?.group === groupKey) {
                     metadata[pluginId].group = 'other';
-                    updated = true;
                 }
-            }
-
-            if (updated) {
-                await this.dataStorage.saveSettings();
             }
         } else {
             await this.dataStorage.updateCSSGroups(updatedGroups);
             
             // 将该分组的CSS片段移动到"其他"分组
             const cssSnippetMetadata = settings.cssSnippetMetadata;
-            let updated = false;
-
             for (const snippetName in cssSnippetMetadata) {
-                if (cssSnippetMetadata[snippetName] && cssSnippetMetadata[snippetName].group === groupKey) {
+                if (cssSnippetMetadata[snippetName]?.group === groupKey) {
                     cssSnippetMetadata[snippetName].group = 'other';
-                    updated = true;
                 }
-            }
-
-            if (updated) {
-                await this.dataStorage.saveSettings();
             }
         }
 
-        new Notice('分组删除成功');
+        await this.dataStorage.saveSettings();
+        new Notice('已删除分组');
         this.display();
     }
 }

@@ -328,6 +328,10 @@ export class PluginManagerModal extends Modal {
      * 刷新界面
      */
     private refresh(): void {
+        // 保存当前滚动位置
+        const scrollableList = this.contentEl.querySelector('.albus-obsidianx-scrollable-list') as HTMLElement;
+        const scrollTop = scrollableList ? scrollableList.scrollTop : 0;
+        
         // 保持搜索框的值
         const searchInput = this.contentEl.querySelector('.albus-obsidianx-search-input') as HTMLInputElement;
         if (searchInput) {
@@ -356,6 +360,11 @@ export class PluginManagerModal extends Modal {
 
         // 刷新插件列表
         this.updatePluginList();
+        
+        // 恢复滚动位置
+        if (scrollableList) {
+            scrollableList.scrollTop = scrollTop;
+        }
     }
 
     /**
@@ -365,6 +374,18 @@ export class PluginManagerModal extends Modal {
         // 统计信息已移动到侧边栏分组项，此处不再显示
         if (!this.statsEl) return;
         this.statsEl.empty();
+    }
+
+    /**
+     * 更新侧边栏统计数量
+     */
+    private updateSidebarStats(): void {
+        // 直接重建侧边栏以确保统计数量正确更新
+        const sidebar = this.contentEl.querySelector('.albus-obsidianx-sidebar') as HTMLElement;
+        if (sidebar) {
+            sidebar.empty();
+            this.buildSidebar(sidebar);
+        }
     }
 
     /**
@@ -395,6 +416,10 @@ export class PluginManagerModal extends Modal {
     private updatePluginList(): void {
         if (!this.pluginListEl) return;
 
+        // 保存当前滚动位置
+        const scrollableList = this.pluginListEl.closest('.albus-obsidianx-scrollable-list') as HTMLElement;
+        const scrollTop = scrollableList ? scrollableList.scrollTop : 0;
+
         this.pluginListEl.empty();
 
         // 根据selectedGroup判断显示CSS片段还是插件
@@ -402,6 +427,14 @@ export class PluginManagerModal extends Modal {
             this.renderCSSSnippetList();
         } else {
             this.renderPluginList();
+        }
+
+        // 恢复滚动位置
+        if (scrollableList) {
+            // 使用 requestAnimationFrame 确保 DOM 更新完成后再恢复滚动位置
+            requestAnimationFrame(() => {
+                scrollableList.scrollTop = scrollTop;
+            });
         }
     }
 
@@ -633,9 +666,10 @@ export class PluginManagerModal extends Modal {
         setIcon(buttonIcon, 'tag');
 
         button.addEventListener('click', (e) => {
+            e.preventDefault();
             e.stopPropagation();
             this.showGroupDropdown = this.showGroupDropdown === snippet.name ? null : snippet.name;
-            this.refresh();
+            this.updatePluginList();
         });
 
         if (this.showGroupDropdown === snippet.name) {
@@ -656,10 +690,13 @@ export class PluginManagerModal extends Modal {
                         setIcon(checkIcon, 'check');
                     }
 
-                    optionEl.addEventListener('click', async () => {
+                    optionEl.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         await this.dataStorage.saveCSSSnippetMetadata(snippet.name, { group: groupKey });
                         this.showGroupDropdown = null;
-                        this.refresh();
+                        this.updateSidebarStats();
+                        this.updatePluginList();
                     });
                 });
         }
@@ -1052,9 +1089,10 @@ export class PluginManagerModal extends Modal {
         setIcon(buttonIcon, 'tag');
 
         button.addEventListener('click', (e) => {
+            e.preventDefault();
             e.stopPropagation();
             this.showGroupDropdown = this.showGroupDropdown === plugin.id ? null : plugin.id;
-            this.refresh();
+            this.updatePluginList();
         });
 
         if (this.showGroupDropdown === plugin.id) {
@@ -1075,10 +1113,13 @@ export class PluginManagerModal extends Modal {
                         setIcon(checkIcon, 'check');
                     }
 
-                    optionEl.addEventListener('click', async () => {
+                    optionEl.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         await this.dataStorage.savePluginMetadata(plugin.id, { group: groupKey });
                         this.showGroupDropdown = null;
-                        this.refresh();
+                        this.updateSidebarStats();
+                        this.updatePluginList();
                     });
                 });
         }
