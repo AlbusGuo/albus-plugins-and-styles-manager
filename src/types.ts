@@ -89,6 +89,8 @@ export interface ObsidianXSettings {
     cssSnippetMetadata: Record<string, CSSSnippetMetadata>;
     /** Opener 设置 */
     opener: OpenerSettings;
+    /** 当前设置标签页 */
+    settingsTab: string;
 }
 
 /**

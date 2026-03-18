@@ -24,7 +24,6 @@ export class PluginManagerModal extends Modal {
     private renamingSnippet: { name: string; newName: string } | null = null;
 
     private pluginListEl: HTMLElement;
-    private statsEl: HTMLElement;
 
     constructor(app: App, dataStorage: DataStorage) {
         super(app);
@@ -90,7 +89,7 @@ export class PluginManagerModal extends Modal {
 
         // 创建固定头部
         const header = mainContent.createDiv('albus-obsidianx-fixed-header');
-        this.statsEl = this.buildToolbar(header);
+        this.buildToolbar(header);
 
         // 创建可滚动列表
         const scrollableList = mainContent.createDiv('albus-obsidianx-scrollable-list');
@@ -251,7 +250,7 @@ export class PluginManagerModal extends Modal {
     /**
      * 构建工具栏
      */
-    private buildToolbar(parent: HTMLElement): HTMLElement {
+    private buildToolbar(parent: HTMLElement): void {
         const toolbar = parent.createDiv('albus-obsidianx-toolbar');
         const isCSSGroup = this.selectedGroup.startsWith('css-');
         
@@ -267,8 +266,6 @@ export class PluginManagerModal extends Modal {
         searchInput.value = this.searchTerm;
         searchInput.addEventListener('input', (e) => {
             this.searchTerm = (e.target as HTMLInputElement).value;
-            // 更新列表、统计和侧边栏计数
-            this.updateStats();
             this.updateSidebarStats();
             this.updatePluginList();
         });
@@ -288,12 +285,6 @@ export class PluginManagerModal extends Modal {
                 this.showCreateSnippetDialog();
             });
         }
-
-        // 第二行：统计信息
-        const statsRow = toolbar.createDiv('albus-obsidianx-toolbar-stats-row');
-        const statsEl = statsRow.createDiv('albus-obsidianx-stats-info');
-        
-        return statsEl;
     }
 
     /**
@@ -410,12 +401,9 @@ export class PluginManagerModal extends Modal {
             const parent = toolbar.parentElement;
             if (parent) {
                 toolbar.remove();
-                this.statsEl = this.buildToolbar(parent);
+                this.buildToolbar(parent);
             }
         }
-
-        // 刷新统计信息
-        this.updateStats();
 
         // 刷新插件列表
         this.updatePluginList();
@@ -424,15 +412,6 @@ export class PluginManagerModal extends Modal {
         if (scrollableList) {
             scrollableList.scrollTop = scrollTop;
         }
-    }
-
-    /**
-     * 更新统计信息
-     */
-    private updateStats(): void {
-        // 统计信息已移动到侧边栏分组项，此处不再显示
-        if (!this.statsEl) return;
-        this.statsEl.empty();
     }
 
     /**
@@ -1309,7 +1288,7 @@ class UninstallConfirmModal extends Modal {
         const { contentEl } = this;
         contentEl.empty();
 
-        contentEl.createEl('h2', { text: '卸载插件' });
+        this.titleEl.setText('卸载插件');
 
         const message = contentEl.createEl('p');
         message.textContent = `确定要卸载插件 "`;
@@ -1352,7 +1331,7 @@ class CreateSnippetModal extends Modal {
         const { contentEl } = this;
         contentEl.empty();
 
-        contentEl.createEl('h2', { text: '新建 CSS 片段' });
+        this.titleEl.setText('新建 CSS 片段');
         
         const input = contentEl.createEl('input', {
             type: 'text',

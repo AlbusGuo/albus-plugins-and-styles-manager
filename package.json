@@ -1,6 +1,6 @@
 {
 	"name": "albus-obsidianx",
-	"version": "0.4.0",
+	"version": "0.4.1",
 	"description": "A powerful Obsidian plugin for snippets and plugins management.",
 	"main": "main.js",
 	"type": "module",
@@ -16,7 +16,6 @@
 		"@types/node": "^25.0.3",
 		"@typescript-eslint/eslint-plugin": "8.35.1",
 		"@typescript-eslint/parser": "8.35.1",
-		"builtin-modules": "3.3.0",
 		"esbuild": "^0.27.0",
 		"eslint": "^9.38.0",
 		"eslint-plugin-obsidianmd": "^0.1.9",

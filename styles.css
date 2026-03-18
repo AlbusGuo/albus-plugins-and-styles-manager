@@ -40,7 +40,9 @@
 
 /* 左侧边栏 */
 .albus-obsidianx-sidebar {
-  width: 240px;
+  width: 20%;
+  min-width: 160px;
+  max-width: 280px;
   background: var(--background-secondary);
   border-right: 1px solid var(--background-modifier-border);
   display: flex;
@@ -145,13 +147,6 @@
   margin-bottom: 0;
 }
 
-.albus-obsidianx-toolbar-stats-row {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  justify-content: space-between;
-}
-
 /* 搜索框容器 */
 .albus-obsidianx-search-wrapper {
   flex: 1;
@@ -192,14 +187,6 @@
   mask-position: center;
   pointer-events: none;
   z-index: 2;
-}
-
-/* 统计信息 */
-.albus-obsidianx-stats-info {
-  padding: 4px 0 0 0;
-  color: var(--text-muted);
-  font-size: 13px;
-  white-space: nowrap;
 }
 
 /* 插件列表 */
@@ -539,29 +526,31 @@
 }
 
 /* 滚动条样式 */
-.albus-obsidianx-scrollable-list::-webkit-scrollbar,
-.albus-obsidianx-dropdown-content::-webkit-scrollbar {
+.albus-obsidianx-scrollable-list::-webkit-scrollbar {
   width: 6px;
 }
 
-.albus-obsidianx-scrollable-list::-webkit-scrollbar-track,
-.albus-obsidianx-dropdown-content::-webkit-scrollbar-track {
+.albus-obsidianx-scrollable-list::-webkit-scrollbar-track {
   background-color: var(--background-modifier-border);
   border-radius: 3px;
 }
 
-.albus-obsidianx-scrollable-list::-webkit-scrollbar-thumb,
-.albus-obsidianx-dropdown-content::-webkit-scrollbar-thumb {
+.albus-obsidianx-scrollable-list::-webkit-scrollbar-thumb {
   background-color: var(--text-muted);
   border-radius: 3px;
 }
 
-.albus-obsidianx-scrollable-list::-webkit-scrollbar-thumb:hover,
-.albus-obsidianx-dropdown-content::-webkit-scrollbar-thumb:hover {
+.albus-obsidianx-scrollable-list::-webkit-scrollbar-thumb:hover {
   background-color: var(--text-normal);
 }
 
 /* 响应式设计 */
+@media (max-width: 1200px) {
+  .albus-obsidianx-plugin-manager-modal .modal {
+    width: 99vw !important;
+  }
+}
+
 @media (max-width: 768px) {
   .albus-obsidianx-toolbar-row {
     flex-direction: column;
@@ -588,4 +577,57 @@
     width: 100%;
     justify-content: flex-start;
   }
+}
+
+/* ========================================
+   设置标签页样式
+   ======================================== */
+
+/* 标签页导航栏 */
+.obsidianx-settings-tabs {
+  display: flex;
+  justify-content: flex-start;
+  border-bottom: 1px solid var(--background-modifier-border);
+  overflow-x: auto;
+  padding: 0;
+  margin: 0 0 16px;
+}
+
+.obsidianx-settings-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* 单个标签页按钮 */
+.obsidianx-settings-tab {
+  padding: 4px 8px;
+  margin-bottom: -1px;
+  border: 1px solid transparent;
+  border-radius: 5px 5px 0 0;
+  cursor: pointer;
+  font-size: var(--font-ui-medium);
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: color .1s ease;
+  border-bottom: 2px solid transparent;
+  user-select: none;
+}
+
+.obsidianx-settings-tab:hover {
+  color: var(--text-normal);
+  border-bottom-color: var(--interactive-accent);
+}
+
+.obsidianx-settings-tab.is-active {
+  color: var(--text-normal);
+  font-weight: 600;
+  border-bottom-color: var(--interactive-accent);
+}
+
+/* 标签页内容区域 */
+.obsidianx-settings-content {
+  padding-top: 0;
+}
+
+.obsidianx-settings-content .setting-group + .setting-item-heading {
+  margin-top: 1.5em;
 }

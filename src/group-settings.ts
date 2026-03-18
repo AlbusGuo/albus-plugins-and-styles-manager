@@ -22,7 +22,44 @@ export class GroupManagementSettingTab extends PluginSettingTab {
     display(): void {
         const { containerEl } = this;
         containerEl.empty();
+        containerEl.addClass('obsidianx-settings');
 
+        // 标签页导航
+        const tabNames = ['manager', 'opener'];
+        const tabLabels: Record<string, string> = {
+            'manager': '管理器',
+            'opener': '文件打开方式'
+        };
+
+        const tabsEl = containerEl.createDiv({ cls: 'obsidianx-settings-tabs' });
+
+        for (const tabName of tabNames) {
+            const tab = tabsEl.createDiv({
+                cls: 'obsidianx-settings-tab'
+                    + (this.dataStorage.getSettings().settingsTab === tabName ? ' is-active' : '')
+            });
+            tab.setText(tabLabels[tabName] ?? tabName);
+            tab.addEventListener('click', () => {
+                this.dataStorage.getSettings().settingsTab = tabName;
+                this.plugin.saveSettings();
+                this.display();
+            });
+        }
+
+        // 内容容器
+        const contentEl = containerEl.createDiv({ cls: 'obsidianx-settings-content' });
+
+        if (this.dataStorage.getSettings().settingsTab === 'manager') {
+            this.displayManagerTab(contentEl);
+        } else if (this.dataStorage.getSettings().settingsTab === 'opener') {
+            this.displayOpenerSettings(contentEl);
+        }
+    }
+
+    /**
+     * 显示管理器标签页（插件分组 + CSS片段分组）
+     */
+    private displayManagerTab(containerEl: HTMLElement): void {
         // 插件分组
         new Setting(containerEl)
             .setName('插件分组')
@@ -36,13 +73,6 @@ export class GroupManagementSettingTab extends PluginSettingTab {
             .setHeading();
         
         this.displayCSSGroups(containerEl);
-
-        // Opener 设置
-        new Setting(containerEl)
-            .setName('Opener 设置')
-            .setHeading();
-        
-        this.displayOpenerSettings(containerEl);
     }
 
     /**
@@ -503,7 +533,7 @@ class AddGroupModal extends Modal {
         const { contentEl } = this;
         contentEl.empty();
         
-        contentEl.createEl('h2', { text: this.type === 'plugin' ? '添加插件分组' : '添加CSS片段分组' });
+        this.titleEl.setText(this.type === 'plugin' ? '添加插件分组' : '添加 CSS 片段分组');
 
         const inputContainer = contentEl.createDiv();
         const input = inputContainer.createEl('input', {

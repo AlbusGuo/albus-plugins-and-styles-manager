@@ -39,7 +39,8 @@ export const DEFAULT_SETTINGS: ObsidianXSettings = {
     cssGroupColors: {},
     metadata: {},
     cssSnippetMetadata: {},
-    opener: DEFAULT_OPENER_SETTINGS
+    opener: DEFAULT_OPENER_SETTINGS,
+    settingsTab: 'manager'
 };
 
 /**
