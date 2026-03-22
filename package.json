@@ -1,7 +1,7 @@
 {
-	"name": "albus-obsidianx",
-	"version": "0.4.1",
-	"description": "A powerful Obsidian plugin for snippets and plugins management.",
+	"name": "albus-psm",
+	"version": "0.5.0",
+	"description": "Manage community plugins and CSS snippets in one place.",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {
@@ -23,7 +23,6 @@
 		"typescript": "^5.7.3"
 	},
 	"dependencies": {
-		"monkey-around": "^2.3.0",
 		"obsidian": "latest"
 	}
 }

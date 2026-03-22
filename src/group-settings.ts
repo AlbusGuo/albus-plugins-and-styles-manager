@@ -1,19 +1,19 @@
 import { App, PluginSettingTab, Setting, Notice, Modal, ButtonComponent, SettingGroup } from 'obsidian';
-import ObsidianXPlugin from './main';
+import PluginsStylesManagerPlugin from './main';
 import { DataStorage } from './data-storage';
 
 /**
  * 分组管理设置标签
  */
-export class GroupManagementSettingTab extends PluginSettingTab {
-    plugin: ObsidianXPlugin;
+export class ManagerSettingTab extends PluginSettingTab {
+    plugin: PluginsStylesManagerPlugin;
 
     icon: string = 'cog';
 
     private dataStorage: DataStorage;
     private editingGroup: { type: 'plugin' | 'css'; key: string; value: string } | null = null;
 
-    constructor(app: App, plugin: ObsidianXPlugin, dataStorage: DataStorage) {
+    constructor(app: App, plugin: PluginsStylesManagerPlugin, dataStorage: DataStorage) {
         super(app, plugin);
         this.plugin = plugin;
         this.dataStorage = dataStorage;
@@ -23,37 +23,8 @@ export class GroupManagementSettingTab extends PluginSettingTab {
         const { containerEl } = this;
         containerEl.empty();
         containerEl.addClass('obsidianx-settings');
-
-        // 标签页导航
-        const tabNames = ['manager', 'opener'];
-        const tabLabels: Record<string, string> = {
-            'manager': '管理器',
-            'opener': '文件打开方式'
-        };
-
-        const tabsEl = containerEl.createDiv({ cls: 'obsidianx-settings-tabs' });
-
-        for (const tabName of tabNames) {
-            const tab = tabsEl.createDiv({
-                cls: 'obsidianx-settings-tab'
-                    + (this.dataStorage.getSettings().settingsTab === tabName ? ' is-active' : '')
-            });
-            tab.setText(tabLabels[tabName] ?? tabName);
-            tab.addEventListener('click', () => {
-                this.dataStorage.getSettings().settingsTab = tabName;
-                this.plugin.saveSettings();
-                this.display();
-            });
-        }
-
-        // 内容容器
         const contentEl = containerEl.createDiv({ cls: 'obsidianx-settings-content' });
-
-        if (this.dataStorage.getSettings().settingsTab === 'manager') {
-            this.displayManagerTab(contentEl);
-        } else if (this.dataStorage.getSettings().settingsTab === 'opener') {
-            this.displayOpenerSettings(contentEl);
-        }
+        this.displayManagerTab(contentEl);
     }
 
     /**
@@ -419,101 +390,6 @@ export class GroupManagementSettingTab extends PluginSettingTab {
         this.display();
     }
 
-    /**
-     * 显示 Opener 设置
-     */
-    private displayOpenerSettings(containerEl: HTMLElement): void {
-        const openerContainer = containerEl.createDiv();
-        const settingGroup = new SettingGroup(openerContainer);
-
-        const settings = this.dataStorage.getSettings();
-        const openerSettings = settings.opener;
-
-        // 新标签页设置
-        settingGroup.addSetting((setting) => {
-            setting
-                .setName('默认在新标签页打开')
-                .setDesc('启用后, 新文件将在新标签页打开, 如果文件之前已打开, 则切换到已存在的标签页. 禁用则使用 Obsidian 默认行为.')
-                .addToggle((toggle) => {
-                    toggle.setValue(openerSettings.newTab).onChange(async (value) => {
-                        settings.opener.newTab = value;
-                        await this.plugin.saveSettings();
-                    });
-                });
-        });
-
-        // PDF 外部应用设置
-        settingGroup.addSetting((setting) => {
-            setting
-                .setName('PDF 使用系统默认应用')
-                .setDesc('启用后, PDF 文件将使用系统默认应用打开.禁用则在 Obsidian 中打开.')
-                .addToggle((toggle) => {
-                    toggle.setValue(openerSettings.PDFApp).onChange(async (value) => {
-                        settings.opener.PDFApp = value;
-                        await this.plugin.saveSettings();
-                    });
-                });
-        });
-
-        // 仅按键时使用外部应用
-        settingGroup.addSetting((setting) => {
-            setting
-                .setName('仅按住 Ctrl/Cmd 键时使用外部应用')
-                .setDesc('启用后, 仅在按住 Ctrl/Cmd 键时使用系统默认应用打开. 禁用则总是使用系统默认应用.')
-                .addToggle((toggle) => {
-                    toggle.setValue(openerSettings.extOnlyWhenMetaKey).onChange(async (value) => {
-                        settings.opener.extOnlyWhenMetaKey = value;
-                        await this.plugin.saveSettings();
-                    });
-                });
-        });
-
-        // 所有媒体文件使用外部应用
-        settingGroup.addSetting((setting) => {
-            setting
-                .setName('所有媒体文件使用外部应用打开')
-                .setDesc('启用后, 所有 Obsidian 支持的媒体文件都将使用系统默认应用打开. 禁用则在 Obsidian 中打开. 默认支持的扩展名包括: png、webp、jpg、jpeg、gif、bmp、svg、mp3、webm、wav、m4a、ogg、3gp、flac、mp4、ogv、mov、mkv.')
-                .addToggle((toggle) => {
-                    toggle.setValue(openerSettings.allExt).onChange(async (value) => {
-                        settings.opener.allExt = value;
-                        await this.plugin.saveSettings();
-                    });
-                });
-        });
-
-        // 自定义扩展名列表
-        settingGroup.addSetting((setting) => {
-            setting
-                .setName('启用自定义扩展名列表')
-                .setDesc('手动添加需要新标签页打开的自定义扩展名.')
-                .addToggle((toggle) => {
-                    toggle.setValue(openerSettings.custExt).onChange(async (value) => {
-                        settings.opener.custExt = value;
-                        await this.plugin.saveSettings();
-                        this.display(); // 重新渲染以显示/隐藏文本框
-                    });
-                });
-        });
-
-        // 自定义扩展名输入框
-        if (openerSettings.custExt) {
-            settingGroup.addSetting((setting) => {
-                setting
-                    .setName('自定义扩展名列表')
-                    .setDesc('输入扩展名, 不需要点, 如 docx. 每行一个.')
-                    .addTextArea((textArea) => {
-                        textArea.inputEl.rows = 5;
-                        textArea
-                            .setValue(openerSettings.custExtList.join('\n'))
-                            .onChange(async (value) => {
-                                settings.opener.custExtList = value.split('\n').filter(line => line.trim());
-                                await this.plugin.saveSettings();
-                            });
-                    });
-                setting.settingEl.addClass('obsidianx-no-border-top');
-            });
-        }
-    }
 }
 
 /**

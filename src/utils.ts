@@ -1,5 +1,9 @@
 import { PluginInfo, FilterType } from './types';
 
+export function isMissingDescriptionSearch(searchTerm: string): boolean {
+    return /^[?？]{3}$/.test(searchTerm.trim());
+}
+
 /**
  * 过滤插件列表
  */
@@ -18,7 +22,7 @@ export function filterPlugins(
         const matchesGroup = selectedGroup === "all" || plugin.group === selectedGroup;
 
         // 特殊搜索：查找未添加描述的插件
-        if (searchTerm === '???') {
+        if (isMissingDescriptionSearch(searchTerm)) {
             return !plugin.remark.trim() && matchesFilter && matchesGroup;
         }
 
@@ -28,6 +32,7 @@ export function filterPlugins(
         const matchesSearch = lowerSearchTerm === "" ||
             plugin.name.toLowerCase().includes(lowerSearchTerm) ||
             plugin.remark.toLowerCase().includes(lowerSearchTerm) ||
+            plugin.description.toLowerCase().includes(lowerSearchTerm) ||
             (plugin.author && plugin.author.toLowerCase().includes(lowerSearchTerm));
 
         return matchesSearch && matchesFilter && matchesGroup;

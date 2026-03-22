@@ -1,5 +1,5 @@
 import { Plugin } from 'obsidian';
-import { ObsidianXSettings, PluginMetadata, CSSSnippetMetadata, OpenerSettings } from './types';
+import { PluginsStylesManagerSettings, PluginMetadata, CSSSnippetMetadata } from './types';
 
 /**
  * 默认插件分组配置
@@ -18,29 +18,15 @@ export const DEFAULT_CSS_GROUPS = {
 };
 
 /**
- * Opener 默认设置
- */
-export const DEFAULT_OPENER_SETTINGS: OpenerSettings = {
-    newTab: true,
-    PDFApp: true,
-    extOnlyWhenMetaKey: true,
-    allExt: false,
-    custExt: false,
-    custExtList: [],
-};
-
-/**
  * 默认设置
  */
-export const DEFAULT_SETTINGS: ObsidianXSettings = {
-    groups: DEFAULT_GROUPS,
-    cssGroups: DEFAULT_CSS_GROUPS,
+export const DEFAULT_SETTINGS: PluginsStylesManagerSettings = {
+    groups: { ...DEFAULT_GROUPS },
+    cssGroups: { ...DEFAULT_CSS_GROUPS },
     groupColors: {},
     cssGroupColors: {},
     metadata: {},
-    cssSnippetMetadata: {},
-    opener: DEFAULT_OPENER_SETTINGS,
-    settingsTab: 'manager'
+    cssSnippetMetadata: {}
 };
 
 /**
@@ -49,41 +35,30 @@ export const DEFAULT_SETTINGS: ObsidianXSettings = {
  */
 export class DataStorage {
     private plugin: Plugin;
-    private settings: ObsidianXSettings;
+    private settings: PluginsStylesManagerSettings;
 
     constructor(plugin: Plugin) {
         this.plugin = plugin;
-        this.settings = DEFAULT_SETTINGS;
+        this.settings = this.createDefaultSettings();
     }
 
     /**
      * 加载设置数据
      */
     async loadSettings(): Promise<void> {
-        const data = await this.plugin.loadData();
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
-        
-        // 确保默认分组存在
-        if (!this.settings.groups) {
-            this.settings.groups = DEFAULT_GROUPS;
-        }
-        if (!this.settings.cssGroups) {
-            this.settings.cssGroups = DEFAULT_CSS_GROUPS;
-        }
-        if (!this.settings.metadata) {
-            this.settings.metadata = {};
-        }
-        if (!this.settings.cssSnippetMetadata) {
-            this.settings.cssSnippetMetadata = {};
-        }
-        if (!this.settings.groupColors) {
-            this.settings.groupColors = {};
-        }
-        if (!this.settings.cssGroupColors) {
-            this.settings.cssGroupColors = {};
-        }
-        if (!this.settings.opener) {
-            this.settings.opener = DEFAULT_OPENER_SETTINGS;
+        const data = await this.plugin.loadData() as Partial<PluginsStylesManagerSettings> | null;
+
+        this.settings = {
+            groups: this.normalizeGroups(data?.groups, DEFAULT_GROUPS),
+            cssGroups: this.normalizeGroups(data?.cssGroups, DEFAULT_CSS_GROUPS),
+            groupColors: this.normalizeRecord(data?.groupColors),
+            cssGroupColors: this.normalizeRecord(data?.cssGroupColors),
+            metadata: this.normalizePluginMetadata(data?.metadata),
+            cssSnippetMetadata: this.normalizeCSSSnippetMetadata(data?.cssSnippetMetadata)
+        };
+
+        if (this.pruneMetadataReferences()) {
+            await this.saveSettings();
         }
     }
 
@@ -97,8 +72,113 @@ export class DataStorage {
     /**
      * 获取当前设置
      */
-    getSettings(): ObsidianXSettings {
+    getSettings(): PluginsStylesManagerSettings {
         return this.settings;
+    }
+
+    private createDefaultSettings(): PluginsStylesManagerSettings {
+        return {
+            groups: { ...DEFAULT_GROUPS },
+            cssGroups: { ...DEFAULT_CSS_GROUPS },
+            groupColors: {},
+            cssGroupColors: {},
+            metadata: {},
+            cssSnippetMetadata: {}
+        };
+    }
+
+    private normalizeGroups(
+        groups: Record<string, string> | undefined,
+        defaults: Record<string, string>
+    ): Record<string, string> {
+        return {
+            ...defaults,
+            ...this.normalizeRecord(groups)
+        };
+    }
+
+    private normalizeRecord(record: Record<string, string> | undefined): Record<string, string> {
+        if (!record) {
+            return {};
+        }
+
+        return Object.fromEntries(
+            Object.entries(record).filter(([, value]) => typeof value === 'string' && value.trim().length > 0)
+        );
+    }
+
+    private normalizePluginMetadata(
+        metadata: Record<string, PluginMetadata> | undefined
+    ): Record<string, PluginMetadata> {
+        if (!metadata) {
+            return {};
+        }
+
+        const entries = Object.entries(metadata).map(([pluginId, value]) => {
+            const normalizedValue = value ?? {} as PluginMetadata;
+
+            return [pluginId, {
+                remark: normalizedValue.remark ?? '',
+                group: normalizedValue.group ?? 'other',
+                lastModified: normalizedValue.lastModified ?? new Date().toISOString()
+            } satisfies PluginMetadata];
+        });
+
+        return Object.fromEntries(entries);
+    }
+
+    private normalizeCSSSnippetMetadata(
+        metadata: Record<string, CSSSnippetMetadata> | undefined
+    ): Record<string, CSSSnippetMetadata> {
+        if (!metadata) {
+            return {};
+        }
+
+        const entries = Object.entries(metadata).map(([snippetName, value]) => {
+            const normalizedValue = value ?? {} as CSSSnippetMetadata;
+
+            return [snippetName, {
+                description: normalizedValue.description ?? '',
+                group: normalizedValue.group ?? 'other',
+                lastModified: normalizedValue.lastModified ?? new Date().toISOString()
+            } satisfies CSSSnippetMetadata];
+        });
+
+        return Object.fromEntries(entries);
+    }
+
+    private pruneMetadataReferences(): boolean {
+        let changed = false;
+
+        for (const metadata of Object.values(this.settings.metadata)) {
+            if (metadata.group !== 'other' && !(metadata.group in this.settings.groups)) {
+                metadata.group = 'other';
+                changed = true;
+            }
+        }
+
+        for (const metadata of Object.values(this.settings.cssSnippetMetadata)) {
+            if (metadata.group !== 'other' && !(metadata.group in this.settings.cssGroups)) {
+                metadata.group = 'other';
+                changed = true;
+            }
+        }
+
+        for (const groupKey of Object.keys(this.settings.groupColors)) {
+            if (!(groupKey in this.settings.groups) || groupKey === 'all' || groupKey === 'other') {
+                delete this.settings.groupColors[groupKey];
+                changed = true;
+            }
+        }
+
+        for (const groupKey of Object.keys(this.settings.cssGroupColors)) {
+            if (!(groupKey in this.settings.cssGroups) || groupKey === 'all' || groupKey === 'other') {
+                delete this.settings.cssGroupColors[groupKey];
+                changed = true;
+            }
+        }
+
+        return changed;
     }
 
     /**

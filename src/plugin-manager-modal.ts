@@ -1,7 +1,8 @@
 import { App, Modal, Menu, Notice, setIcon, ToggleComponent, normalizePath } from 'obsidian';
 import { DataStorage } from './data-storage';
 import { PluginInfo, CSSSnippetInfo, FilterType } from './types';
-import { filterPlugins, sortPlugins } from './utils';
+import { asInternalApp } from './internal-api';
+import { filterPlugins, isMissingDescriptionSearch, sortPlugins } from './utils';
 
 /**
  * 插件管理器模态框
@@ -29,6 +30,10 @@ export class PluginManagerModal extends Modal {
         super(app);
         this.dataStorage = dataStorage;
     }
+
+	private get internalApp() {
+		return asInternalApp(this.app);
+	}
 
     onOpen() {
         const { contentEl, containerEl } = this;
@@ -135,7 +140,7 @@ export class PluginManagerModal extends Modal {
             
             // 计算统计数据（考虑搜索和状态筛选）
             const actualGroupKey = groupKey;
-            const isSpecialSearch = this.searchTerm === '???';
+            const isSpecialSearch = isMissingDescriptionSearch(this.searchTerm);
             const filteredPlugins = allPlugins.filter(p => {
                 // 特殊搜索：查找未添加描述的插件
                 if (isSpecialSearch) {
@@ -206,7 +211,7 @@ export class PluginManagerModal extends Modal {
             
             // 计算统计数据（考虑搜索和状态筛选）
             const actualGroupKey = groupKey;
-            const isSpecialCssSearch = this.searchTerm === '???';
+            const isSpecialCssSearch = isMissingDescriptionSearch(this.searchTerm);
             const filteredSnippets = allSnippets.filter(s => {
                 // 特殊搜索：查找未添加描述的片段
                 if (isSpecialCssSearch) {
@@ -263,11 +268,34 @@ export class PluginManagerModal extends Modal {
             placeholder: isCSSGroup ? '搜索CSS片段名称或描述...' : '搜索插件名称、作者或描述...',
             cls: 'albus-obsidianx-search-input'
         });
+
+        const clearButton = searchWrapper.createEl('button', {
+            cls: 'clickable-icon albus-obsidianx-search-clear',
+            attr: { 'aria-label': '清除搜索内容', type: 'button' }
+        });
+        setIcon(clearButton, 'x');
+
         searchInput.value = this.searchTerm;
+        this.toggleSearchClearButton(clearButton, this.searchTerm);
+
         searchInput.addEventListener('input', (e) => {
             this.searchTerm = (e.target as HTMLInputElement).value;
+            this.toggleSearchClearButton(clearButton, this.searchTerm);
             this.updateSidebarStats();
             this.updatePluginList();
+        });
+
+        clearButton.addEventListener('click', () => {
+            if (!this.searchTerm) {
+                return;
+            }
+
+            this.searchTerm = '';
+            searchInput.value = '';
+            this.toggleSearchClearButton(clearButton, this.searchTerm);
+            this.updateSidebarStats();
+            this.updatePluginList();
+            searchInput.focus();
         });
         
         // 状态筛选三段式按钮（在搜索框右侧）
@@ -323,21 +351,26 @@ export class PluginManagerModal extends Modal {
         });
     }
 
+    private toggleSearchClearButton(button: HTMLButtonElement, searchTerm: string): void {
+        button.toggleClass('is-visible', searchTerm.length > 0);
+    }
+
     /**
      * 获取插件数据
      */
     private getPluginData(): PluginInfo[] {
-        // @ts-ignore - Obsidian内部API
-        const plugins = this.app.plugins.plugins;
-        // @ts-ignore - Obsidian内部API
-        const allPlugins = this.app.plugins.manifests;
+        const plugins = this.internalApp.plugins.plugins;
+        const allPlugins = this.internalApp.plugins.manifests;
 
-        return Object.keys(allPlugins).map((pluginId) => {
+        return Object.entries(allPlugins).flatMap(([pluginId, plugin]) => {
+            if (!plugin) {
+                return [];
+            }
+
             const enabled = !!plugins[pluginId];
-            const plugin = allPlugins[pluginId];
             const metadata = this.dataStorage.getPluginMetadata(pluginId);
             
-            return {
+            return [{
                 id: pluginId,
                 name: plugin.name,
                 version: plugin.version,
@@ -348,7 +381,7 @@ export class PluginManagerModal extends Modal {
                 remark: metadata.remark,
                 group: metadata.group,
                 lastModified: metadata.lastModified
-            };
+            }];
         });
     }
 
@@ -356,8 +389,7 @@ export class PluginManagerModal extends Modal {
      * 获取CSS片段数据
      */
     private getCSSSnippetData(): CSSSnippetInfo[] {
-        // @ts-ignore - Obsidian内部API
-        const customCss = this.app.customCss;
+        const customCss = this.internalApp.customCss;
         const allSnippets = customCss.snippets || [];
         
         return allSnippets.map((snippetName: string) => {
@@ -440,7 +472,7 @@ export class PluginManagerModal extends Modal {
             const matchesGroup = actualGroup === "all" || snippet.group === actualGroup;
 
             // 特殊搜索：查找未添加描述的片段
-            if (this.searchTerm === '???') {
+            if (isMissingDescriptionSearch(this.searchTerm)) {
                 return !snippet.description.trim() && matchesStatus && matchesGroup;
             }
 
@@ -677,8 +709,7 @@ export class PluginManagerModal extends Modal {
         });
         setIcon(openBtn, 'file-code');
         openBtn.addEventListener('click', () => {
-            // @ts-ignore - Obsidian内部API
-            this.app.openWithDefaultApp(snippet.path);
+			this.internalApp.openWithDefaultApp(snippet.path);
         });
 
         // 删除按钮
@@ -756,8 +787,7 @@ export class PluginManagerModal extends Modal {
         }
 
         try {
-            // @ts-ignore - Obsidian内部API
-            const customCss = this.app.customCss;
+			const customCss = this.internalApp.customCss;
             const snippetsFolder = customCss.getSnippetsFolder();
             const oldPath = customCss.getSnippetPath(oldName);
             const newPath = normalizePath(`${snippetsFolder}/${newName}.css`);
@@ -815,8 +845,7 @@ export class PluginManagerModal extends Modal {
      */
     private async toggleCSSSnippet(snippetName: string, enabled: boolean): Promise<void> {
         try {
-            // @ts-ignore - Obsidian内部API
-            const customCss = this.app.customCss;
+			const customCss = this.internalApp.customCss;
             customCss.setCssEnabledStatus(snippetName, enabled);
             new Notice(`${snippetName} ${enabled ? '已启用' : '已禁用'}`);
             this.refresh();
@@ -838,8 +867,7 @@ export class PluginManagerModal extends Modal {
         if (!confirmed) return;
 
         try {
-            // @ts-ignore - Obsidian内部API
-            const customCss = this.app.customCss;
+			const customCss = this.internalApp.customCss;
             
             // 如果已启用则先禁用
             if (customCss.enabledSnippets.has(snippet.name)) {
@@ -880,8 +908,7 @@ export class PluginManagerModal extends Modal {
      */
     private async createCSSSnippet(snippetName: string): Promise<void> {
         try {
-            // @ts-ignore
-            const customCss = this.app.customCss;
+			const customCss = this.internalApp.customCss;
             if (!customCss) {
                 new Notice('无法访问CSS片段系统');
                 return;
@@ -908,8 +935,7 @@ export class PluginManagerModal extends Modal {
             customCss.requestLoadSnippets();
 
             // 打开刚创建的CSS文件
-            // @ts-ignore
-            await this.app.openWithDefaultApp(filePath);
+            await Promise.resolve(this.internalApp.openWithDefaultApp(filePath));
 
             // 等待片段加载完成后再刷新
             setTimeout(() => {
@@ -1183,7 +1209,7 @@ export class PluginManagerModal extends Modal {
         title.textContent = isCSSGroup ? '未找到CSS片段' : '未找到插件';
         
         const description = emptyState.createEl('p');
-        if (this.searchTerm || this.filterEnabled !== 'all' || this.selectedGroup !== 'all') {
+        if (this.searchTerm || this.filterEnabled !== 'all' || !this.selectedGroup.endsWith('all')) {
             description.textContent = '尝试调整搜索条件或筛选状态';
         } else {
             description.textContent = isCSSGroup ? '没有任何CSS片段' : '没有安装任何插件';
@@ -1194,15 +1220,12 @@ export class PluginManagerModal extends Modal {
      * 切换插件状态
      */
     private async togglePluginStatus(pluginId: string): Promise<void> {
-        // @ts-ignore - Obsidian内部API
-        const plugin = this.app.plugins.plugins[pluginId];
+        const plugin = this.internalApp.plugins.plugins[pluginId];
 
         if (plugin) {
-            // @ts-ignore - Obsidian内部API
-            await this.app.plugins.disablePluginAndSave(pluginId);
+            await this.internalApp.plugins.disablePluginAndSave(pluginId);
         } else {
-            // @ts-ignore - Obsidian内部API
-            await this.app.plugins.enablePluginAndSave(pluginId);
+            await this.internalApp.plugins.enablePluginAndSave(pluginId);
         }
         
         this.refresh();
@@ -1215,20 +1238,22 @@ export class PluginManagerModal extends Modal {
      * 检测插件是否有设置页
      */
     private pluginHasSettings(pluginId: string): boolean {
-        // @ts-ignore - Obsidian内部API
-        const pluginTabs = this.app.setting?.pluginTabs || [];
+        const pluginTabs = this.internalApp.setting?.pluginTabs || [];
         return pluginTabs.some((tab: any) => tab.id === pluginId);
     }
 
     private openPluginSettings(pluginId: string): void {
+        if (!this.internalApp.setting) {
+            new Notice('无法打开插件设置');
+            return;
+        }
+
         // 关闭当前模态框
         this.close();
         
         // 打开设置页面并定位到插件
-        // @ts-ignore
-        this.app.setting.open();
-        // @ts-ignore
-        this.app.setting.openTabById(pluginId);
+        this.internalApp.setting.open();
+        this.internalApp.setting.openTabById(pluginId);
     }
 
     /**
@@ -1247,15 +1272,12 @@ export class PluginManagerModal extends Modal {
     private async uninstallPlugin(pluginId: string): Promise<void> {
         try {
             // 先禁用插件
-            // @ts-ignore - Obsidian内部API
-            if (this.app.plugins.plugins[pluginId]) {
-                // @ts-ignore - Obsidian内部API
-                await this.app.plugins.disablePluginAndSave(pluginId);
+            if (this.internalApp.plugins.plugins[pluginId]) {
+                await this.internalApp.plugins.disablePluginAndSave(pluginId);
             }
             
             // 卸载插件
-            // @ts-ignore - Obsidian内部API
-            await this.app.plugins.uninstallPlugin(pluginId);
+            await this.internalApp.plugins.uninstallPlugin(pluginId);
             
             // 删除元数据
             await this.dataStorage.deletePluginMetadata(pluginId);

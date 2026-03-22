@@ -1,9 +1,9 @@
 {
-	"id": "albus-obsidianx",
-	"name": "ObsidianX",
-	"version": "0.4.1",
+	"id": "albus-psm",
+	"name": "Plugins & Styles Manager",
+	"version": "0.5.0",
 	"minAppVersion": "1.11.4",
-	"description": "A powerful Obsidian plugin for snippets and plugins management.",
+	"description": "Manage community plugins and CSS snippets in one place.",
 	"author": "Albus",
 	"authorUrl": "https://github.com/AlbusGuo",
 	"isDesktopOnly": true

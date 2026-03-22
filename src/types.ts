@@ -74,7 +74,7 @@ export interface GroupConfig {
 /**
  * 插件设置接口
  */
-export interface ObsidianXSettings {
+export interface PluginsStylesManagerSettings {
     /** 插件分组配置 */
     groups: GroupConfig;
     /** CSS片段分组配置 */
@@ -87,33 +87,11 @@ export interface ObsidianXSettings {
     metadata: Record<string, PluginMetadata>;
     /** CSS片段元数据 */
     cssSnippetMetadata: Record<string, CSSSnippetMetadata>;
-    /** Opener 设置 */
-    opener: OpenerSettings;
-    /** 当前设置标签页 */
-    settingsTab: string;
 }
 
 /**
  * 过滤选项类型
  */
 export type FilterType = 'all' | 'enabled' | 'disabled';
-
-/**
- * Opener 插件设置接口
- */
-export interface OpenerSettings {
-    /** 默认在新标签页打开文件 */
-    newTab: boolean;
-    /** PDF使用系统默认应用打开 */
-    PDFApp: boolean;
-    /** 仅在按住 Ctrl/Cmd 键时使用外部应用 */
-    extOnlyWhenMetaKey: boolean;
-    /** 所有媒体文件使用外部应用打开 */
-    allExt: boolean;
-    /** 启用自定义扩展名列表 */
-    custExt: boolean;
-    /** 自定义扩展名列表 */
-    custExtList: string[];
-}
 
 
