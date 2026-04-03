@@ -3,6 +3,7 @@ import { DataStorage } from './data-storage';
 import { PluginInfo, CSSSnippetInfo, FilterType } from './types';
 import { asInternalApp } from './internal-api';
 import { filterPlugins, isMissingDescriptionSearch, sortPlugins } from './utils';
+import { InlineMarkdownEditor } from './inline-markdown-editor';
 
 /**
  * 插件管理器模态框
@@ -23,6 +24,7 @@ export class PluginManagerModal extends Modal {
     private editingRemark: { pluginId: string; value: string } | null = null;
     private editingDescription: { snippetName: string; value: string } | null = null;
     private renamingSnippet: { name: string; newName: string } | null = null;
+    private activeEditor: InlineMarkdownEditor | null = null;
 
     private pluginListEl: HTMLElement;
 
@@ -62,6 +64,9 @@ export class PluginManagerModal extends Modal {
     }
 
     onClose() {
+        // 销毁活跃编辑器
+        this.destroyActiveEditor();
+
         // 保存浏览状态
         const scrollableList = this.contentEl.querySelector('.albus-obsidianx-scrollable-list') as HTMLElement;
         PluginManagerModal.savedState = {
@@ -73,6 +78,16 @@ export class PluginManagerModal extends Modal {
 
         const { contentEl } = this;
         contentEl.empty();
+    }
+
+    /**
+     * 销毁当前活跃的 InlineMarkdownEditor
+     */
+    private destroyActiveEditor(): void {
+        if (this.activeEditor) {
+            this.activeEditor.destroy();
+            this.activeEditor = null;
+        }
     }
 
     /**
@@ -127,6 +142,34 @@ export class PluginManagerModal extends Modal {
             return 0;
         });
         
+        // 预计算各分组匹配数量（单次遍历）
+        const isSpecialSearch = isMissingDescriptionSearch(this.searchTerm);
+        const lowerSearchTerm = this.searchTerm.toLowerCase();
+        const pluginGroupCounts: Record<string, number> = {};
+
+        for (const p of allPlugins) {
+            const matchesStatus = this.filterEnabled === 'all' ||
+                (this.filterEnabled === 'enabled' && p.enabled) ||
+                (this.filterEnabled === 'disabled' && !p.enabled);
+            if (!matchesStatus) continue;
+
+            let matchesContent: boolean;
+            if (isSpecialSearch) {
+                matchesContent = !p.remark.trim();
+            } else {
+                matchesContent = lowerSearchTerm === '' ||
+                    p.name.toLowerCase().includes(lowerSearchTerm) ||
+                    (p.author && p.author.toLowerCase().includes(lowerSearchTerm)) ||
+                    p.description.toLowerCase().includes(lowerSearchTerm) ||
+                    p.remark.toLowerCase().includes(lowerSearchTerm);
+            }
+
+            if (matchesContent) {
+                pluginGroupCounts['all'] = (pluginGroupCounts['all'] || 0) + 1;
+                pluginGroupCounts[p.group] = (pluginGroupCounts[p.group] || 0) + 1;
+            }
+        }
+
         sortedGroupKeys.forEach(groupKey => {
             const pluginGroupKey = 'plugin-' + groupKey;
             const groupItem = pluginGroupList.createDiv('albus-obsidianx-sidebar-item');
@@ -138,43 +181,9 @@ export class PluginManagerModal extends Modal {
             const nameEl = groupItem.createDiv('albus-obsidianx-sidebar-item-name');
             nameEl.textContent = groups[groupKey] || '';
             
-            // 计算统计数据（考虑搜索和状态筛选）
-            const actualGroupKey = groupKey;
-            const isSpecialSearch = isMissingDescriptionSearch(this.searchTerm);
-            const filteredPlugins = allPlugins.filter(p => {
-                // 特殊搜索：查找未添加描述的插件
-                if (isSpecialSearch) {
-                    const matchesGroup = actualGroupKey === 'all' || p.group === actualGroupKey;
-                    const matchesStatus = this.filterEnabled === 'all' ||
-                        (this.filterEnabled === 'enabled' && p.enabled) ||
-                        (this.filterEnabled === 'disabled' && !p.enabled);
-                    return !p.remark.trim() && matchesGroup && matchesStatus;
-                }
-
-                // 搜索过滤
-                const lowerSearchTerm = this.searchTerm.toLowerCase();
-                const matchesSearch = lowerSearchTerm === '' ||
-                    p.name.toLowerCase().includes(lowerSearchTerm) ||
-                    (p.author && p.author.toLowerCase().includes(lowerSearchTerm)) ||
-                    p.description.toLowerCase().includes(lowerSearchTerm) ||
-                    p.remark.toLowerCase().includes(lowerSearchTerm);
-                
-                // 分组过滤
-                const matchesGroup = actualGroupKey === 'all' || p.group === actualGroupKey;
-
-                // 状态过滤
-                const matchesStatus = this.filterEnabled === 'all' ||
-                    (this.filterEnabled === 'enabled' && p.enabled) ||
-                    (this.filterEnabled === 'disabled' && !p.enabled);
-                
-                return matchesSearch && matchesGroup && matchesStatus;
-            });
-            
-            const totalCount = filteredPlugins.length;
-            
             // 显示统计（仅显示总匹配数）
             const countEl = groupItem.createDiv('albus-obsidianx-sidebar-item-count');
-            countEl.textContent = `${totalCount}`;
+            countEl.textContent = `${pluginGroupCounts[groupKey] ?? 0}`;
             
             groupItem.addEventListener('click', () => {
                 this.selectedGroup = pluginGroupKey;
@@ -198,6 +207,30 @@ export class PluginManagerModal extends Modal {
             return 0;
         });
         
+        // 预计算CSS片段各分组匹配数量（单次遍历）
+        const cssGroupCounts: Record<string, number> = {};
+
+        for (const s of allSnippets) {
+            const matchesStatus = this.filterEnabled === 'all' ||
+                (this.filterEnabled === 'enabled' && s.enabled) ||
+                (this.filterEnabled === 'disabled' && !s.enabled);
+            if (!matchesStatus) continue;
+
+            let matchesContent: boolean;
+            if (isSpecialSearch) {
+                matchesContent = !s.description.trim();
+            } else {
+                matchesContent = lowerSearchTerm === '' ||
+                    s.name.toLowerCase().includes(lowerSearchTerm) ||
+                    s.description.toLowerCase().includes(lowerSearchTerm);
+            }
+
+            if (matchesContent) {
+                cssGroupCounts['all'] = (cssGroupCounts['all'] || 0) + 1;
+                cssGroupCounts[s.group] = (cssGroupCounts[s.group] || 0) + 1;
+            }
+        }
+
         sortedCssGroupKeys.forEach(groupKey => {
             const cssGroupKey = 'css-' + groupKey;
             const groupItem = cssGroupList.createDiv('albus-obsidianx-sidebar-item');
@@ -209,41 +242,9 @@ export class PluginManagerModal extends Modal {
             const nameEl = groupItem.createDiv('albus-obsidianx-sidebar-item-name');
             nameEl.textContent = cssGroups[groupKey] || '';
             
-            // 计算统计数据（考虑搜索和状态筛选）
-            const actualGroupKey = groupKey;
-            const isSpecialCssSearch = isMissingDescriptionSearch(this.searchTerm);
-            const filteredSnippets = allSnippets.filter(s => {
-                // 特殊搜索：查找未添加描述的片段
-                if (isSpecialCssSearch) {
-                    const matchesGroup = actualGroupKey === 'all' || s.group === actualGroupKey;
-                    const matchesStatus = this.filterEnabled === 'all' ||
-                        (this.filterEnabled === 'enabled' && s.enabled) ||
-                        (this.filterEnabled === 'disabled' && !s.enabled);
-                    return !s.description.trim() && matchesGroup && matchesStatus;
-                }
-
-                // 搜索过滤
-                const lowerSearchTerm = this.searchTerm.toLowerCase();
-                const matchesSearch = lowerSearchTerm === '' ||
-                    s.name.toLowerCase().includes(lowerSearchTerm) ||
-                    s.description.toLowerCase().includes(lowerSearchTerm);
-                
-                // 分组过滤
-                const matchesGroup = actualGroupKey === 'all' || s.group === actualGroupKey;
-
-                // 状态过滤
-                const matchesStatus = this.filterEnabled === 'all' ||
-                    (this.filterEnabled === 'enabled' && s.enabled) ||
-                    (this.filterEnabled === 'disabled' && !s.enabled);
-                
-                return matchesSearch && matchesGroup && matchesStatus;
-            });
-            
-            const totalCount = filteredSnippets.length;
-            
             // 显示统计（仅显示总匹配数）
             const countEl = groupItem.createDiv('albus-obsidianx-sidebar-item-count');
-            countEl.textContent = `${totalCount}`;
+            countEl.textContent = `${cssGroupCounts[groupKey] ?? 0}`;
             
             groupItem.addEventListener('click', () => {
                 this.selectedGroup = cssGroupKey;
@@ -653,31 +654,23 @@ export class PluginManagerModal extends Modal {
         const remarkSection = parent.createDiv('albus-obsidianx-plugin-remark');
 
         if (this.editingDescription?.snippetName === snippet.name) {
-            const textarea = remarkSection.createEl('textarea', {
-                cls: 'albus-obsidianx-remark-textarea',
-                placeholder: '点击添加描述'
-            });
-            textarea.value = this.editingDescription.value;
-            textarea.rows = 1;
+            this.destroyActiveEditor();
 
-            textarea.addEventListener('input', (e) => {
-                if (this.editingDescription) {
-                    this.editingDescription.value = (e.target as HTMLTextAreaElement).value;
-                }
-            });
-
-            textarea.addEventListener('blur', () => {
-                this.saveCSSSnippetDescription(snippet.name);
-            });
-
-            textarea.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
+            const editorWrapper = remarkSection.createDiv('albus-obsidianx-inline-editor-field');
+            this.activeEditor = new InlineMarkdownEditor(this.app, editorWrapper, {
+                value: this.editingDescription.value,
+                placeholder: '点击添加描述',
+                onChange: (value) => {
+                    if (this.editingDescription) {
+                        this.editingDescription.value = value;
+                    }
+                },
+                onBlur: () => {
                     this.saveCSSSnippetDescription(snippet.name);
                 }
             });
 
-            setTimeout(() => textarea.focus(), 0);
+            setTimeout(() => this.activeEditor?.focus(), 30);
         } else {
             const display = remarkSection.createDiv({
                 cls: snippet.description ? 'albus-obsidianx-remark-display' : 'albus-obsidianx-remark-display empty'
@@ -1029,7 +1022,13 @@ export class PluginManagerModal extends Modal {
         const author = meta.createSpan('albus-obsidianx-plugin-author');
         author.textContent = `作者: ${plugin.author}`;
 
-        // 备注区域
+        // 原始描述（来自插件清单）
+        if (plugin.description) {
+            const descEl = parent.createDiv('albus-obsidianx-plugin-description');
+            descEl.textContent = plugin.description;
+        }
+
+        // 用户备注区域
         this.buildRemarkSection(parent, plugin);
     }
 
@@ -1040,33 +1039,23 @@ export class PluginManagerModal extends Modal {
         const remarkSection = parent.createDiv('albus-obsidianx-plugin-remark');
 
         if (this.editingRemark?.pluginId === plugin.id) {
-            const textarea = remarkSection.createEl('textarea', {
-                cls: 'albus-obsidianx-remark-textarea',
-                placeholder: '点击添加描述'
-            });
-            textarea.value = this.editingRemark.value;
-            textarea.rows = 1;
+            this.destroyActiveEditor();
 
-            // 更新editingRemark的值
-            textarea.addEventListener('input', (e) => {
-                if (this.editingRemark) {
-                    this.editingRemark.value = (e.target as HTMLTextAreaElement).value;
-                }
-            });
-
-            textarea.addEventListener('blur', () => {
-                this.saveRemark(plugin.id);
-            });
-
-            textarea.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
+            const editorWrapper = remarkSection.createDiv('albus-obsidianx-inline-editor-field');
+            this.activeEditor = new InlineMarkdownEditor(this.app, editorWrapper, {
+                value: this.editingRemark.value,
+                placeholder: '点击添加描述',
+                onChange: (value) => {
+                    if (this.editingRemark) {
+                        this.editingRemark.value = value;
+                    }
+                },
+                onBlur: () => {
                     this.saveRemark(plugin.id);
                 }
             });
 
-            // 自动聚焦
-            setTimeout(() => textarea.focus(), 0);
+            setTimeout(() => this.activeEditor?.focus(), 30);
         } else {
             const display = remarkSection.createDiv('albus-obsidianx-remark-display');
             if (!plugin.remark) {

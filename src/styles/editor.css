@@ -1,0 +1,81 @@
+/* ========================================
+   备注显示与 InlineMarkdownEditor
+   ======================================== */
+
+/* 插件备注 */
+.albus-obsidianx-plugin-remark {
+  width: 100%;
+  margin-top: 2px;
+}
+
+.albus-obsidianx-remark-display {
+  cursor: pointer;
+  padding: 0;
+  border-radius: 4px;
+  transition: color 0.2s ease;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.albus-obsidianx-remark-display:not(.empty) {
+  color: var(--text-normal);
+  background: transparent;
+  border: none;
+  border-left: 2px solid var(--interactive-accent);
+  padding: 2px 8px;
+  border-radius: 0;
+}
+
+.albus-obsidianx-remark-display.empty {
+  color: var(--text-muted);
+  font-style: italic;
+  background: transparent;
+  border: none;
+}
+
+.albus-obsidianx-remark-display:hover {
+  background: transparent;
+  color: var(--text-accent);
+}
+
+.albus-obsidianx-remark-text {
+  font-size: 12px;
+  line-height: 1.4;
+  display: block;
+  color: var(--text-muted);
+  padding: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.albus-obsidianx-remark-display:not(.empty) .albus-obsidianx-remark-text {
+  color: var(--text-normal);
+}
+
+/* InlineMarkdownEditor 容器 */
+.albus-obsidianx-inline-editor-field {
+  width: 100%;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--input-radius);
+  background: var(--background-primary);
+  overflow: hidden;
+  min-height: 42px;
+  box-sizing: border-box;
+}
+
+.albus-obsidianx-inline-editor-field:focus-within {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
+}
+
+.albus-obsidianx-inline-editor-field .cm-editor {
+  background: transparent;
+}
+
+/* 通用编辑器字体与内边距 */
+.albus-obsidianx-inline-editor-field .cm-editor .cm-scroller {
+  padding: 6px 8px;
+  font-size: var(--font-ui-small);
+  line-height: 1.5;
+  font-family: inherit;
+}

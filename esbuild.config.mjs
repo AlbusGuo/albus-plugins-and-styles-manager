@@ -41,9 +41,20 @@ const context = await esbuild.context({
 	minify: prod,
 });
 
+// Build CSS separately from src/styles/
+const cssContext = await esbuild.context({
+	entryPoints: ["src/styles/index.css"],
+	bundle: true,
+	outfile: "styles.css",
+	minify: prod,
+	logLevel: "info",
+});
+
 if (prod) {
 	await context.rebuild();
+	await cssContext.rebuild();
 	process.exit(0);
 } else {
 	await context.watch();
+	await cssContext.watch();
 }

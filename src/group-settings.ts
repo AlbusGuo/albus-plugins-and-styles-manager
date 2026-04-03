@@ -1,6 +1,7 @@
-import { App, PluginSettingTab, Setting, Notice, Modal, ButtonComponent, SettingGroup } from 'obsidian';
+import { App, PluginSettingTab, Setting, Notice, Modal, SettingGroup } from 'obsidian';
 import PluginsStylesManagerPlugin from './main';
 import { DataStorage } from './data-storage';
+import { asInternalApp } from './internal-api';
 
 /**
  * 分组管理设置标签
@@ -31,6 +32,30 @@ export class ManagerSettingTab extends PluginSettingTab {
      * 显示管理器标签页（插件分组 + CSS片段分组）
      */
     private displayManagerTab(containerEl: HTMLElement): void {
+        // 数据清理
+        new Setting(containerEl)
+            .setName('清除已卸载的插件数据')
+            .setDesc('移除不再安装的插件的备注和分组信息')
+            .addButton(btn => {
+                btn.setButtonText('清除')
+                    .onClick(async () => {
+                        const settings = this.dataStorage.getSettings();
+                        const allPlugins = asInternalApp(this.app).plugins.manifests;
+                        const keysToDelete = Object.keys(settings.metadata).filter(
+                            pluginId => !(pluginId in allPlugins)
+                        );
+                        if (keysToDelete.length > 0) {
+                            for (const pluginId of keysToDelete) {
+                                delete settings.metadata[pluginId];
+                            }
+                            await this.dataStorage.saveSettings();
+                            new Notice(`已清除 ${keysToDelete.length} 个已卸载插件的数据`);
+                        } else {
+                            new Notice('没有需要清除的数据');
+                        }
+                    });
+            });
+
         // 插件分组
         new Setting(containerEl)
             .setName('插件分组')
@@ -96,37 +121,39 @@ export class ManagerSettingTab extends PluginSettingTab {
                         });
 
                     if (isEditing) {
-                        // 编辑模式：在nameEl中放置输入框
-                        setting.nameEl.empty();
-                        const input = setting.nameEl.createEl('input', {
-                            type: 'text',
-                            value: this.editingGroup!.value,
-                            cls: 'obsidianx-inline-rename-input'
-                        });
-                        
-                        input.addEventListener('input', (e) => {
-                            if (this.editingGroup) {
-                                this.editingGroup.value = (e.target as HTMLInputElement).value;
-                            }
-                        });
-                        
-                        input.addEventListener('keydown', (e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                this.saveEdit(groupKey, 'plugin');
-                            } else if (e.key === 'Escape') {
-                                this.cancelEdit();
-                            }
-                        });
-                        
-                        input.addEventListener('blur', () => {
-                            this.saveEdit(groupKey, 'plugin');
-                        });
+                        // 编辑模式：使用 Obsidian 原生输入框，移至 nameEl 保持左侧定位
+                        setting.setName('');
+                        setting.addText((text) => {
+                            text.setValue(this.editingGroup!.value)
+                                .setPlaceholder('分组名称')
+                                .onChange((value) => {
+                                    if (this.editingGroup) {
+                                        this.editingGroup.value = value;
+                                    }
+                                });
 
-                        setTimeout(() => {
-                            input.focus();
-                            input.select();
-                        }, 0);
+                            // 将输入框从 controlEl 移至 nameEl，保持原生样式但定位在左侧
+                            setting.nameEl.appendChild(text.inputEl);
+                            text.inputEl.style.width = '100%';
+
+                            text.inputEl.addEventListener('keydown', (e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    this.saveEdit(groupKey, 'plugin');
+                                } else if (e.key === 'Escape') {
+                                    this.cancelEdit();
+                                }
+                            });
+
+                            text.inputEl.addEventListener('blur', () => {
+                                this.saveEdit(groupKey, 'plugin');
+                            });
+
+                            setTimeout(() => {
+                                text.inputEl.focus();
+                                text.inputEl.select();
+                            }, 0);
+                        });
                     } else {
                         // 显示模式
                         setting.setName(groupName);
@@ -141,11 +168,13 @@ export class ManagerSettingTab extends PluginSettingTab {
         }
 
         // 添加按钮
-        settingGroup.addSetting((setting) => {
-            setting.addButton((button: ButtonComponent) => {
+        settingGroup.addSetting((addSetting) => {
+            addSetting.settingEl.addClass('albus-obsidianx-item-add-setting');
+            addSetting.controlEl.addClass('albus-obsidianx-item-add-container');
+            addSetting.addButton((button) => {
                 button
                     .setButtonText('添加插件分组')
-                    .setCta()
+                    .setClass('albus-obsidianx-item-add-btn')
                     .onClick(() => {
                         this.showAddGroupDialog('plugin');
                     });
@@ -203,37 +232,39 @@ export class ManagerSettingTab extends PluginSettingTab {
                         });
 
                     if (isEditing) {
-                        // 编辑模式：在nameEl中放置输入框
-                        setting.nameEl.empty();
-                        const input = setting.nameEl.createEl('input', {
-                            type: 'text',
-                            value: this.editingGroup!.value,
-                            cls: 'obsidianx-inline-rename-input'
-                        });
-                        
-                        input.addEventListener('input', (e) => {
-                            if (this.editingGroup) {
-                                this.editingGroup.value = (e.target as HTMLInputElement).value;
-                            }
-                        });
-                        
-                        input.addEventListener('keydown', (e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                this.saveEdit(groupKey, 'css');
-                            } else if (e.key === 'Escape') {
-                                this.cancelEdit();
-                            }
-                        });
-                        
-                        input.addEventListener('blur', () => {
-                            this.saveEdit(groupKey, 'css');
-                        });
+                        // 编辑模式：使用 Obsidian 原生输入框，移至 nameEl 保持左侧定位
+                        setting.setName('');
+                        setting.addText((text) => {
+                            text.setValue(this.editingGroup!.value)
+                                .setPlaceholder('分组名称')
+                                .onChange((value) => {
+                                    if (this.editingGroup) {
+                                        this.editingGroup.value = value;
+                                    }
+                                });
 
-                        setTimeout(() => {
-                            input.focus();
-                            input.select();
-                        }, 0);
+                            // 将输入框从 controlEl 移至 nameEl，保持原生样式但定位在左侧
+                            setting.nameEl.appendChild(text.inputEl);
+                            text.inputEl.style.width = '100%';
+
+                            text.inputEl.addEventListener('keydown', (e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    this.saveEdit(groupKey, 'css');
+                                } else if (e.key === 'Escape') {
+                                    this.cancelEdit();
+                                }
+                            });
+
+                            text.inputEl.addEventListener('blur', () => {
+                                this.saveEdit(groupKey, 'css');
+                            });
+
+                            setTimeout(() => {
+                                text.inputEl.focus();
+                                text.inputEl.select();
+                            }, 0);
+                        });
                     } else {
                         // 显示模式
                         setting.setName(groupName);
@@ -248,11 +279,13 @@ export class ManagerSettingTab extends PluginSettingTab {
         }
 
         // 添加按钮
-        settingGroup.addSetting((setting) => {
-            setting.addButton((button: ButtonComponent) => {
+        settingGroup.addSetting((addSetting) => {
+            addSetting.settingEl.addClass('albus-obsidianx-item-add-setting');
+            addSetting.controlEl.addClass('albus-obsidianx-item-add-container');
+            addSetting.addButton((button) => {
                 button
                     .setButtonText('添加 CSS 分组')
-                    .setCta()
+                    .setClass('albus-obsidianx-item-add-btn')
                     .onClick(() => {
                         this.showAddGroupDialog('css');
                     });

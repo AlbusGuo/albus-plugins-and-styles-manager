@@ -1,6 +1,6 @@
 {
 	"name": "albus-psm",
-	"version": "0.5.0",
+	"version": "0.6.0",
 	"description": "Manage community plugins and CSS snippets in one place.",
 	"main": "main.js",
 	"type": "module",

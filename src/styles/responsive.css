@@ -1,0 +1,37 @@
+/* ========================================
+   响应式设计
+   ======================================== */
+
+@media (max-width: 1200px) {
+  .albus-obsidianx-plugin-manager-modal .modal {
+    width: 99vw !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .albus-obsidianx-toolbar-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .albus-obsidianx-search-wrapper,
+  .albus-obsidianx-status-dropdown {
+    width: 100%;
+  }
+  
+  .albus-obsidianx-plugin-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .albus-obsidianx-plugin-info {
+    padding-right: 0;
+    width: 100%;
+  }
+  
+  .albus-obsidianx-plugin-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

@@ -1,0 +1,7 @@
+/* Main stylesheet for Plugins & Styles Manager */
+
+@import './modal.css';
+@import './plugin-list.css';
+@import './editor.css';
+@import './settings.css';
+@import './responsive.css';

@@ -1,0 +1,197 @@
+/* ========================================
+   插件/片段列表：条目、信息、徽章、操作按钮
+   ======================================== */
+
+/* 插件列表 */
+.albus-obsidianx-plugin-list {
+  padding: 8px 0 20px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 分割线 */
+.albus-obsidianx-divider {
+  height: 0;
+  border: none;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.albus-obsidianx-plugin-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  min-height: 70px;
+  box-sizing: border-box;
+}
+
+/* 插件信息区域 */
+.albus-obsidianx-plugin-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding-right: 12px;
+}
+
+.albus-obsidianx-plugin-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.albus-obsidianx-plugin-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.albus-obsidianx-desktop-only-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--background-modifier-hover);
+  padding: 0 5px;
+  border-radius: 4px;
+  line-height: 1.6;
+  white-space: nowrap;
+  border: 1px solid var(--background-modifier-border);
+}
+
+/* 分类标签 */
+.albus-obsidianx-category-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  color: var(--text-on-accent);
+  background: var(--interactive-accent);
+  padding: 0 6px;
+  border-radius: 4px;
+  line-height: 1.6;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+
+/* 可编辑名称 */
+.albus-obsidianx-editable-name {
+  cursor: pointer;
+}
+
+.albus-obsidianx-editable-name:hover {
+  color: var(--text-accent);
+}
+
+/* 版本信息 */
+.albus-obsidianx-plugin-version-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.albus-obsidianx-plugin-meta {
+  display: flex;
+  align-items: center;
+}
+
+.albus-obsidianx-plugin-author {
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 原始描述（来自插件清单） */
+.albus-obsidianx-plugin-description {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* 插件操作区域 */
+.albus-obsidianx-plugin-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* 设置按钮 */
+.albus-obsidianx-settings-button {
+  width: 28px;
+  height: 28px;
+  background: transparent !important;
+  color: var(--icon-color) !important;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+  padding: 0;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 4px;
+}
+
+.albus-obsidianx-settings-button:hover:not(.disabled) {
+  background: var(--background-modifier-hover) !important;
+}
+
+.albus-obsidianx-settings-button.disabled {
+  opacity: 0;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* 分组按钮 */
+.albus-obsidianx-group-button {
+  width: 28px;
+  height: 28px;
+  background: transparent !important;
+  color: var(--icon-color) !important;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+  padding: 0;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 4px;
+}
+
+.albus-obsidianx-group-button:hover {
+  background: var(--background-modifier-hover) !important;
+}
+
+/* 删除按钮 */
+.albus-obsidianx-delete-button {
+  width: 28px;
+  height: 28px;
+  background: transparent !important;
+  color: var(--icon-color) !important;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+  padding: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 4px;
+}
+
+.albus-obsidianx-delete-button:hover {
+  background: var(--background-modifier-hover) !important;
+}
+
+/* 启用/禁用开关 - 使用Obsidian默认样式 */
+.albus-obsidianx-plugin-actions .checkbox-container {
+  margin: 0;
+}

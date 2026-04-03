@@ -1,0 +1,280 @@
+/* ========================================
+   模态框：容器、侧边栏、主内容区、工具栏
+   ======================================== */
+
+/* 模态框容器样式 */
+.albus-obsidianx-plugin-manager-modal.modal {
+  padding: 0 !important;
+}
+
+.albus-obsidianx-plugin-manager-modal .modal {
+  width: 65vw !important;
+  height: 85vh !important;
+  padding: 0 !important;
+}
+
+/* 隐藏modal-header */
+.albus-obsidianx-plugin-manager-modal .modal-header {
+  display: none !important;
+}
+
+.albus-obsidianx-plugin-manager-modal .modal-content {
+  padding: 0 !important;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* 插件管理器主容器 */
+.albus-obsidianx-container {
+  width: 100%;
+  height: 100%;
+  background: var(--background-primary);
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+  padding: 0;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 左侧边栏 */
+.albus-obsidianx-sidebar {
+  width: 20%;
+  min-width: 160px;
+  max-width: 280px;
+  background: var(--background-secondary);
+  border-right: 1px solid var(--background-modifier-border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.albus-obsidianx-sidebar-title {
+  padding: 30px 24px 6px 24px;
+  font-weight: 600;
+  font-size: 0.85em;
+  color: var(--text-faint);
+  text-align: left;
+}
+
+.albus-obsidianx-sidebar-list {
+  flex: 1;
+  padding: 4px 8px;
+}
+
+.albus-obsidianx-sidebar-item {
+  padding: 6px 16px;
+  margin: 2px 0;
+  cursor: pointer;
+  font-size: 0.9em;
+  color: var(--text-normal);
+  transition: background-color 0.15s ease, color 0.15s ease;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.albus-obsidianx-sidebar-item-name {
+  flex: 1;
+}
+
+.albus-obsidianx-sidebar-item-count {
+  font-size: 0.8em;
+  opacity: 0.7;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+.albus-obsidianx-sidebar-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.albus-obsidianx-sidebar-item.active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-weight: 500;
+}
+
+.albus-obsidianx-sidebar-item.active .albus-obsidianx-sidebar-item-count {
+  opacity: 0.9;
+}
+
+/* 右侧主内容区 */
+.albus-obsidianx-main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 固定的头部区域 */
+.albus-obsidianx-fixed-header {
+  background: var(--background-primary);
+  padding: 12px;
+  padding-bottom: 0 !important;
+  border-bottom: 1px solid var(--background-modifier-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+}
+
+/* 可滚动的插件列表区域 */
+.albus-obsidianx-scrollable-list {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+  padding: 0 12px;
+}
+
+/* 工具栏 */
+.albus-obsidianx-toolbar {
+  margin-bottom: 8px;
+}
+
+.albus-obsidianx-toolbar-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.albus-obsidianx-toolbar-row:last-child {
+  margin-bottom: 0;
+}
+
+/* 搜索框容器 */
+.albus-obsidianx-search-wrapper {
+  flex: 1;
+  min-width: 200px;
+  position: relative;
+}
+
+.albus-obsidianx-search-input {
+  width: 100%;
+  padding: 8px 36px 8px 35px !important;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  color: var(--text-normal);
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.albus-obsidianx-search-input:hover,
+.albus-obsidianx-search-input:focus {
+  border-color: var(--interactive-accent);
+}
+
+/* 搜索图标 - 使用伪元素 */
+.albus-obsidianx-search-wrapper:before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  background-color: var(--icon-color);
+  mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>');
+  mask-repeat: no-repeat;
+  mask-position: center;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.albus-obsidianx-search-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.albus-obsidianx-search-clear.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 模态框通用样式 */
+.obsidianx-modal-message {
+  margin: 12px 0 16px 0;
+}
+
+.obsidianx-modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.obsidianx-modal-input {
+  width: 100%;
+  padding: 8px;
+  margin: 12px 0 16px 0;
+  box-sizing: border-box;
+}
+
+.obsidianx-rename-input {
+  width: 100%;
+  padding: 4px 8px;
+  font-size: var(--font-ui-medium);
+  box-sizing: border-box;
+}
+
+/* 空状态 */
+.albus-obsidianx-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.albus-obsidianx-empty-icon {
+  margin-bottom: 16px;
+  color: var(--text-muted);
+  opacity: 0.5;
+  width: 48px;
+  height: 48px;
+}
+
+.albus-obsidianx-empty-state h3 {
+  margin: 0 0 8px 0;
+  color: var(--text-normal);
+  font-size: 16px;
+}
+
+.albus-obsidianx-empty-state p {
+  margin: 0 0 16px 0;
+  font-size: 13px;
+}
+
+/* 滚动条样式 */
+.albus-obsidianx-scrollable-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.albus-obsidianx-scrollable-list::-webkit-scrollbar-track {
+  background-color: var(--background-modifier-border);
+  border-radius: 3px;
+}
+
+.albus-obsidianx-scrollable-list::-webkit-scrollbar-thumb {
+  background-color: var(--text-muted);
+  border-radius: 3px;
+}
+
+.albus-obsidianx-scrollable-list::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-normal);
+}
