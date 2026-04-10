@@ -26,6 +26,11 @@
   border-radius: 0;
 }
 
+.albus-obsidianx-remark-display.snippet-desc:not(.empty) {
+  border-left: none;
+  padding: 0;
+}
+
 .albus-obsidianx-remark-display.empty {
   color: var(--text-muted);
   font-style: italic;

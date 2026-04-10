@@ -673,7 +673,7 @@ export class PluginManagerModal extends Modal {
             setTimeout(() => this.activeEditor?.focus(), 30);
         } else {
             const display = remarkSection.createDiv({
-                cls: snippet.description ? 'albus-obsidianx-remark-display' : 'albus-obsidianx-remark-display empty'
+                cls: snippet.description ? 'albus-obsidianx-remark-display snippet-desc' : 'albus-obsidianx-remark-display snippet-desc empty'
             });
             const text = display.createSpan('albus-obsidianx-remark-text');
             text.textContent = snippet.description || '点击添加描述';
