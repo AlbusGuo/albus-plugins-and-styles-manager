@@ -2,14 +2,12 @@
    模态框：容器、侧边栏、主内容区、工具栏
    ======================================== */
 
-/* 模态框容器样式 */
+/* 模态框容器样式 — 尺寸由 mod-sidebar-layout + Obsidian CSS 变量接管 */
 .albus-obsidianx-plugin-manager-modal.modal {
   padding: 0 !important;
 }
 
 .albus-obsidianx-plugin-manager-modal .modal {
-  width: 65vw !important;
-  height: 85vh !important;
   padding: 0 !important;
 }
 

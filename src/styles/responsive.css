@@ -2,12 +2,6 @@
    响应式设计
    ======================================== */
 
-@media (max-width: 1200px) {
-  .albus-obsidianx-plugin-manager-modal .modal {
-    width: 99vw !important;
-  }
-}
-
 @media (max-width: 768px) {
   .albus-obsidianx-toolbar-row {
     flex-direction: column;

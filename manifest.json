@@ -1,7 +1,7 @@
 {
 	"id": "albus-psm",
 	"name": "Plugins & Styles Manager",
-	"version": "0.6.1",
+	"version": "0.6.2",
 	"minAppVersion": "1.11.4",
 	"description": "Manage community plugins and CSS snippets in one place.",
 	"author": "Albus",

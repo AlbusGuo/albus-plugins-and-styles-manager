@@ -38,8 +38,9 @@ export class PluginManagerModal extends Modal {
 	}
 
     onOpen() {
-        const { contentEl, containerEl } = this;
+        const { contentEl, containerEl, modalEl } = this;
         containerEl.addClass('albus-obsidianx-plugin-manager-modal');
+        modalEl.addClass('mod-sidebar-layout');
 
         // 恢复上次浏览状态
         if (PluginManagerModal.savedState) {
