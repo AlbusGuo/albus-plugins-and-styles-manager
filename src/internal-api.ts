@@ -5,7 +5,6 @@ interface InternalPluginManager {
 	plugins: Record<string, unknown>;
 	enablePluginAndSave(pluginId: string): Promise<void>;
 	disablePluginAndSave(pluginId: string): Promise<void>;
-	uninstallPlugin(pluginId: string): Promise<void>;
 }
 
 interface InternalCustomCssManager {
@@ -17,14 +16,30 @@ interface InternalCustomCssManager {
 	getSnippetsFolder(): string;
 }
 
-interface InternalPluginTab {
-	id: string;
+export interface InternalSettingDefinition {
+	name?: unknown;
+	displayValue?: unknown;
+	items?: unknown;
+	[key: string]: unknown;
 }
 
-interface InternalSettingManager {
-	pluginTabs: InternalPluginTab[];
+export interface InternalSettingTab {
+	id: string;
+	name?: string;
+	containerEl?: HTMLElement;
+	settingItems?: InternalSettingDefinition[];
+	getElementForDefinition?(definition: InternalSettingDefinition): HTMLElement | null;
+}
+
+export interface InternalSettingManager {
+	settingTabs: InternalSettingTab[];
+	activeTab: InternalSettingTab | null;
+	pageStack: unknown[];
+	tabContentContainer: HTMLElement;
 	open(): void;
 	openTabById(pluginId: string): void;
+	getCurrentPageEl(): HTMLElement | null;
+	refreshCurrentPage(): void;
 }
 
 export interface InternalApp extends App {

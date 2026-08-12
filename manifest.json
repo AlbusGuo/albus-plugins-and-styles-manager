@@ -1,9 +1,9 @@
 {
 	"id": "albus-psm",
 	"name": "Plugins & Styles Manager",
-	"version": "0.6.2",
-	"minAppVersion": "1.11.4",
-	"description": "Manage community plugins and CSS snippets in one place.",
+	"version": "1.0.0",
+	"minAppVersion": "1.13.6",
+	"description": "Add groups and notes to Obsidian's plugin and CSS snippet settings.",
 	"author": "Albus",
 	"authorUrl": "https://github.com/AlbusGuo",
 	"isDesktopOnly": true

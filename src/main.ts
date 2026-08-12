@@ -1,125 +1,124 @@
 import { Plugin } from 'obsidian';
 import { DataStorage } from './data-storage';
-import { PluginManagerModal } from './plugin-manager-modal';
-import { ManagerSettingTab } from './group-settings';
 import { asInternalApp } from './internal-api';
+import { SettingsIntegrationController } from './settings/settings-integration-controller';
 
-/**
- * Plugins & Styles Manager 主插件类
- */
 export default class PluginsStylesManagerPlugin extends Plugin {
 	private dataStorage!: DataStorage;
+	private settingsIntegration!: SettingsIntegrationController;
+	private initializationPromise: Promise<void> | null = null;
+	private unloaded = false;
+	private toggleRegistrationScheduled = false;
+	private toggleCommandsRegistered = false;
 
-	async onload() {
-		// 初始化数据存储
+	onload(): void {
 		this.dataStorage = new DataStorage(this);
-		await this.dataStorage.loadSettings();
-
-		// 添加左侧功能区图标
-		this.addRibbonIcon('package', '打开插件与样式管理器', () => {
-			this.openPluginManager();
+		this.settingsIntegration = new SettingsIntegrationController(this.app, this.dataStorage);
+		this.register(() => {
+			this.unloaded = true;
+			this.settingsIntegration.stop();
+		});
+		this.app.workspace.onLayoutReady(() => {
+			void this.runAfterInitialization();
 		});
 
-		// 添加命令：打开插件管理器
 		this.addCommand({
 			id: 'open-plugin-manager',
-			name: '打开插件与样式管理器',
+			name: '打开第三方插件管理',
 			callback: () => {
-				this.openPluginManager();
+				void this.runAfterInitialization(() => {
+					this.settingsIntegration.openCommunityPlugins();
+				});
 			}
 		});
-
-		// 注册插件和CSS片段的切换命令
-		this.registerToggleCommands();
-
-		// 添加设置标签页
-		this.addSettingTab(new ManagerSettingTab(this.app, this, this.dataStorage));
+		this.addCommand({
+			id: 'open-css-snippet-manager',
+			name: '打开 CSS 样式代码片段管理',
+			callback: () => {
+				void this.runAfterInitialization(() => {
+					this.settingsIntegration.openCSSSnippets();
+				});
+			}
+		});
 	}
 
-	/**
-	 * 保存设置
-	 */
-	async saveSettings(): Promise<void> {
-		await this.dataStorage.saveSettings();
+	private initialize(): Promise<void> {
+		if (this.unloaded) return Promise.resolve();
+		if (!this.initializationPromise) {
+			this.initializationPromise = this.dataStorage.loadSettings().catch(error => {
+				this.initializationPromise = null;
+				throw error;
+			});
+		}
+		return this.initializationPromise;
 	}
 
-	/**
-	 * 获取数据存储对象
-	 */
-	getDataStorage(): DataStorage {
-		return this.dataStorage;
+	private async runAfterInitialization(action?: () => void): Promise<void> {
+		try {
+			await this.initialize();
+			if (this.unloaded) return;
+			this.settingsIntegration.start();
+			this.scheduleToggleCommandRegistration();
+			action?.();
+		} catch (error) {
+			console.error('初始化插件与样式管理器失败:', error);
+		}
 	}
 
-	/**
-	 * 打开插件管理器
-	 */
-	private openPluginManager(): void {
-		const modal = new PluginManagerModal(this.app, this.dataStorage);
-		modal.open();
+	private scheduleToggleCommandRegistration(): void {
+		if (this.toggleRegistrationScheduled || this.toggleCommandsRegistered) return;
+		this.toggleRegistrationScheduled = true;
+		const view = this.app.workspace.containerEl.ownerDocument.defaultView ?? window;
+		const registerCommands = () => {
+			this.toggleRegistrationScheduled = false;
+			if (this.unloaded || this.toggleCommandsRegistered) return;
+			this.toggleCommandsRegistered = true;
+			this.registerPluginToggleCommands();
+			this.registerCSSSnippetToggleCommands();
+		};
+
+		if (typeof view.requestIdleCallback === 'function') {
+			const idleId = view.requestIdleCallback(registerCommands, { timeout: 2000 });
+			this.register(() => view.cancelIdleCallback(idleId));
+		} else {
+			const timeoutId = view.setTimeout(registerCommands, 0);
+			this.register(() => view.clearTimeout(timeoutId));
+		}
 	}
 
-	/**
-	 * 注册所有插件和CSS片段的切换命令
-	 */
-	private registerToggleCommands(): void {
-		this.registerPluginToggleCommands();
-		this.registerCSSSnippetToggleCommands();
-	}
-
-	/**
-	 * 注册所有社区插件的切换命令
-	 */
 	private registerPluginToggleCommands(): void {
 		const allPlugins = asInternalApp(this.app).plugins.manifests;
 
-		Object.entries(allPlugins).forEach(([pluginId, plugin]) => {
-			if (!plugin) return;
-
+		for (const [pluginId, plugin] of Object.entries(allPlugins)) {
 			this.addCommand({
 				id: `toggle-plugin-${pluginId}`,
 				name: `切换插件: ${plugin.name}`,
-				callback: async () => {
-					await this.togglePlugin(pluginId);
-				}
+				callback: () => this.togglePlugin(pluginId)
 			});
-		});
+		}
 	}
 
-	/**
-	 * 注册所有CSS片段的切换命令
-	 */
 	private registerCSSSnippetToggleCommands(): void {
 		const customCss = asInternalApp(this.app).customCss;
-		const allSnippets = customCss.snippets || [];
 
-		allSnippets.forEach((snippetName: string) => {
+		for (const snippetName of customCss.snippets) {
 			this.addCommand({
 				id: `toggle-css-snippet-${this.sanitizeId(snippetName)}`,
-				name: `切换CSS片段: ${snippetName}`,
-				callback: async () => {
-					await this.toggleCSSSnippet(snippetName);
-				}
+				name: `切换 CSS 片段: ${snippetName}`,
+				callback: () => this.toggleCSSSnippet(snippetName)
 			});
-		});
+		}
 	}
 
-	/**
-	 * 切换插件状态
-	 */
 	private async togglePlugin(pluginId: string): Promise<void> {
 		const internalApp = asInternalApp(this.app);
-		const plugin = internalApp.plugins.plugins[pluginId];
-
-		if (plugin) {
+		if (internalApp.plugins.plugins[pluginId]) {
 			await internalApp.plugins.disablePluginAndSave(pluginId);
 		} else {
 			await internalApp.plugins.enablePluginAndSave(pluginId);
 		}
 	}
 
-	/**
-	 * 切换CSS片段状态
-	 */
 	private async toggleCSSSnippet(snippetName: string): Promise<void> {
 		const customCss = asInternalApp(this.app).customCss;
 		const isEnabled = customCss.enabledSnippets.has(snippetName);
@@ -127,9 +126,6 @@ export default class PluginsStylesManagerPlugin extends Plugin {
 		await customCss.requestLoadSnippets();
 	}
 
-	/**
-	 * 清理ID字符串，确保符合命令ID规范
-	 */
 	private sanitizeId(name: string): string {
 		return name.toLowerCase()
 			.replace(/\s+/g, '-')
@@ -137,4 +133,3 @@ export default class PluginsStylesManagerPlugin extends Plugin {
 			.replace(/-+/g, '-');
 	}
 }
-

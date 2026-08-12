@@ -1,14 +1,14 @@
 {
 	"compilerOptions": {
-		"baseUrl": "src",
 		"inlineSourceMap": true,
 		"inlineSources": true,
 		"module": "ESNext",
 		"target": "ES6",
-		"allowJs": true,
 		"noImplicitAny": true,
 		"noImplicitThis": true,
 		"noImplicitReturns": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
 		"moduleResolution": "node",
 		"importHelpers": true,
 		"noUncheckedIndexedAccess": true,
