@@ -1,7 +1,7 @@
-# vscode
-.vscode 
+# Visual Studio Code
+.vscode
 
-# Intellij
+# IntelliJ
 *.iml
 .idea
 
@@ -19,7 +19,7 @@ styles.css
 # Exclude sourcemaps
 *.map
 
-# obsidian
+# Obsidian
 data.json
 
 # Exclude macOS Finder (System Explorer) View States

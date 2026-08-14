@@ -1,5 +1,5 @@
 import { DropdownComponent, ExtraButtonComponent } from 'obsidian';
-import { FilterType } from '../types';
+import type { FilterType } from '../types';
 
 interface FilterBarState {
 	filterEnabled: FilterType;

@@ -1,9 +1,9 @@
-import { App } from 'obsidian';
+import type { App } from 'obsidian';
 import { DataStorage } from '../data-storage';
-import {
+import { asInternalApp } from '../internal-api';
+import type {
 	InternalSettingManager,
-	InternalSettingTab,
-	asInternalApp
+	InternalSettingTab
 } from '../internal-api';
 import { CSSPageEnhancer } from './css-page-enhancer';
 import { PluginPageEnhancer } from './plugin-page-enhancer';
@@ -274,8 +274,7 @@ export class SettingsIntegrationController {
 			if (
 				addedElements.length > 0
 				&& addedElements.every(element => (
-					element.matches(OWNED_ELEMENT_SELECTOR)
-					|| element.closest(OWNED_ELEMENT_SELECTOR)
+					element.closest(OWNED_ELEMENT_SELECTOR)
 				))
 			) return false;
 		}

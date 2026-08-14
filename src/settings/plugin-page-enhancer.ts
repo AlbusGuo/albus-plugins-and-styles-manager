@@ -83,7 +83,7 @@ export class PluginPageEnhancer {
 
 		if (!this.filterBar?.containerEl.isConnected) {
 			this.filterBar = new SettingsFilterBar(headerControlEl, {
-				groups: this.dataStorage.getSettings().groups,
+				groups: this.dataStorage.getGroups('plugin'),
 				countNoun: '个插件',
 				onChange: () => this.applyFilters(),
 				onManageGroups: () => this.openGroupManagement()
@@ -126,8 +126,7 @@ export class PluginPageEnhancer {
 	}
 
 	private addGroupBadge(nameEl: HTMLElement, groupKey: string): void {
-		const settings = this.dataStorage.getSettings();
-		const groupName = settings.groups[groupKey];
+		const groupName = this.dataStorage.getGroups('plugin')[groupKey];
 		if (!groupName || groupKey === 'all') return;
 
 		const badgeEl = nameEl.createSpan({
@@ -135,7 +134,7 @@ export class PluginPageEnhancer {
 			text: groupName,
 			attr: { 'data-albus-psm-owned': ROW_OWNER }
 		});
-		const color = this.dataStorage.getGroupColor(groupKey);
+		const color = this.dataStorage.getGroupColor('plugin', groupKey);
 		if (color) badgeEl.setCssProps({ '--albus-psm-group-color': color });
 	}
 
@@ -169,7 +168,7 @@ export class PluginPageEnhancer {
 			event.preventDefault();
 			event.stopPropagation();
 			const menu = new Menu();
-			const groups = this.dataStorage.getSettings().groups;
+			const groups = this.dataStorage.getGroups('plugin');
 			for (const [groupKey, groupName] of Object.entries(groups)) {
 				if (groupKey === 'all') continue;
 				menu.addItem(item => {
@@ -209,7 +208,7 @@ export class PluginPageEnhancer {
 			rowEl.toggleClass('albus-psm-filtered-out', !(matchesStatus && matchesGroup));
 		}
 
-		this.filterBar.updateGroups(this.dataStorage.getSettings().groups, counts);
+		this.filterBar.updateGroups(this.dataStorage.getGroups('plugin'), counts);
 	}
 
 	private refreshRow(rowEl: HTMLElement): void {
@@ -224,7 +223,7 @@ export class PluginPageEnhancer {
 		const hasGroupButton = Boolean(rowEl.querySelector(
 			`[data-albus-psm-owned="${ROW_OWNER}"][data-albus-psm-role="${GROUP_BUTTON_ROLE}"]`
 		));
-		const groupName = this.dataStorage.getSettings().groups[groupKey];
+		const groupName = this.dataStorage.getGroups('plugin')[groupKey];
 		const needsBadge = Boolean(groupName && groupKey !== 'all');
 		const hasBadge = Boolean(rowEl.querySelector(
 			`.albus-psm-group-badge[data-albus-psm-owned="${ROW_OWNER}"]`

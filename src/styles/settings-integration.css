@@ -3,8 +3,6 @@
 	align-items: center;
 	flex: 0 1 auto;
 	min-width: 0;
-	box-sizing: border-box;
-	width: auto;
 	margin-inline-end: var(--size-4-1);
 }
 
@@ -17,7 +15,6 @@
 }
 
 .albus-psm-settings-toolbar-filters {
-	flex: 0 1 auto;
 	flex-wrap: nowrap;
 	gap: var(--size-4-1);
 }
@@ -147,8 +144,7 @@
 	width: 100%;
 	height: var(--albus-psm-note-height, auto);
 	min-height: var(--input-height);
-	overflow-x: hidden;
-	overflow-y: hidden;
+	overflow: hidden;
 	overflow-wrap: anywhere;
 	white-space: pre-wrap;
 	resize: none;

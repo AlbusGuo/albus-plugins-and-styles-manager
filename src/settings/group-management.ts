@@ -8,8 +8,7 @@ import {
 	TextComponent
 } from 'obsidian';
 import { DataStorage } from '../data-storage';
-
-type ManagedGroupType = 'plugin' | 'css';
+import type { ManagedGroupType } from '../types';
 
 interface GroupManagementOptions {
 	type: ManagedGroupType;
@@ -137,7 +136,7 @@ class GroupManagementPanel {
 				this.options.onChanged();
 			});
 		actionsEl.querySelector<HTMLInputElement>('input[type="color"]')
-			?.setAttribute('aria-label', `分组颜色：${groupName}`);
+			?.setAttribute('aria-label', `分组颜色: ${groupName}`);
 
 		new ExtraButtonComponent(actionsEl)
 			.setIcon('pencil')
@@ -172,7 +171,7 @@ class GroupManagementPanel {
 			.onChange(value => {
 				pendingName = value;
 			});
-		nameInput.inputEl.setAttribute('aria-label', `分组名称：${groupName}`);
+		nameInput.inputEl.setAttribute('aria-label', `分组名称: ${groupName}`);
 
 		const commit = async () => {
 			if (finished) return;
@@ -197,34 +196,19 @@ class GroupManagementPanel {
 	}
 
 	private getGroups(): Record<string, string> {
-		const settings = this.options.dataStorage.getSettings();
-		return this.options.type === 'plugin' ? settings.groups : settings.cssGroups;
+		return this.options.dataStorage.getGroups(this.options.type);
 	}
 
 	private getGroupUsageCount(groupKey: string): number {
-		const settings = this.options.dataStorage.getSettings();
-		if (this.options.type === 'plugin') {
-			return Object.values(settings.metadata).filter(
-				metadata => metadata.group === groupKey
-			).length;
-		}
-		return Object.values(settings.cssSnippetMetadata).filter(
-			metadata => metadata.group === groupKey
-		).length;
+		return this.options.dataStorage.getGroupUsageCount(this.options.type, groupKey);
 	}
 
 	private getGroupColor(groupKey: string): string {
-		return this.options.type === 'plugin'
-			? this.options.dataStorage.getGroupColor(groupKey)
-			: this.options.dataStorage.getCSSGroupColor(groupKey);
+		return this.options.dataStorage.getGroupColor(this.options.type, groupKey);
 	}
 
 	private async saveGroupColor(groupKey: string, color: string): Promise<void> {
-		if (this.options.type === 'plugin') {
-			await this.options.dataStorage.saveGroupColor(groupKey, color);
-		} else {
-			await this.options.dataStorage.saveCSSGroupColor(groupKey, color);
-		}
+		await this.options.dataStorage.saveGroupColor(this.options.type, groupKey, color);
 	}
 
 	private async addGroup(rawName: string): Promise<void> {
@@ -242,13 +226,9 @@ class GroupManagementPanel {
 		}
 
 		const updatedGroups = { ...groups, [groupKey]: groupName };
-		if (this.options.type === 'plugin') {
-			await this.options.dataStorage.updateGroups(updatedGroups);
-		} else {
-			await this.options.dataStorage.updateCSSGroups(updatedGroups);
-		}
+		await this.options.dataStorage.updateGroups(this.options.type, updatedGroups);
 
-		new Notice(`已添加分组“${groupName}”`);
+		new Notice(`已添加分组 "${groupName}"`);
 		this.render();
 		this.options.onChanged();
 	}
@@ -269,11 +249,7 @@ class GroupManagementPanel {
 		}
 
 		const updatedGroups = { ...groups, [groupKey]: groupName };
-		if (this.options.type === 'plugin') {
-			await this.options.dataStorage.updateGroups(updatedGroups);
-		} else {
-			await this.options.dataStorage.updateCSSGroups(updatedGroups);
-		}
+		await this.options.dataStorage.updateGroups(this.options.type, updatedGroups);
 
 		new Notice('分组名称已更新');
 		this.render();
@@ -281,23 +257,7 @@ class GroupManagementPanel {
 	}
 
 	private async deleteGroup(groupKey: string): Promise<void> {
-		const settings = this.options.dataStorage.getSettings();
-		const groups = this.getGroups();
-		const updatedGroups = { ...groups };
-		delete updatedGroups[groupKey];
-
-		if (this.options.type === 'plugin') {
-			for (const metadata of Object.values(settings.metadata)) {
-				if (metadata.group === groupKey) metadata.group = 'other';
-			}
-			await this.options.dataStorage.updateGroups(updatedGroups);
-		} else {
-			for (const metadata of Object.values(settings.cssSnippetMetadata)) {
-				if (metadata.group === groupKey) metadata.group = 'other';
-			}
-			await this.options.dataStorage.updateCSSGroups(updatedGroups);
-		}
-
+		await this.options.dataStorage.deleteGroup(this.options.type, groupKey);
 		new Notice('已删除分组');
 		this.render();
 		this.options.onChanged();

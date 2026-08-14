@@ -94,7 +94,7 @@ export class CSSPageEnhancer {
 
 		if (!this.filterBar?.containerEl.isConnected) {
 			this.filterBar = new SettingsFilterBar(headerControlEl, {
-				groups: this.dataStorage.getSettings().cssGroups,
+				groups: this.dataStorage.getGroups('css'),
 				countNoun: '个片段',
 				onChange: () => this.applyFilters(),
 				onManageGroups: () => this.openGroupManagement(),
@@ -150,8 +150,7 @@ export class CSSPageEnhancer {
 	}
 
 	private addGroupBadge(nameEl: HTMLElement, groupKey: string): void {
-		const settings = this.dataStorage.getSettings();
-		const groupName = settings.cssGroups[groupKey];
+		const groupName = this.dataStorage.getGroups('css')[groupKey];
 		if (!groupName || groupKey === 'all') return;
 
 		const badgeEl = nameEl.createSpan({
@@ -159,7 +158,7 @@ export class CSSPageEnhancer {
 			text: groupName,
 			attr: { 'data-albus-psm-owned': ROW_OWNER }
 		});
-		const color = this.dataStorage.getCSSGroupColor(groupKey);
+		const color = this.dataStorage.getGroupColor('css', groupKey);
 		if (color) badgeEl.setCssProps({ '--albus-psm-group-color': color });
 	}
 
@@ -234,7 +233,7 @@ export class CSSPageEnhancer {
 		currentGroup: string
 	): void {
 		const menu = new Menu();
-		const groups = this.dataStorage.getSettings().cssGroups;
+		const groups = this.dataStorage.getGroups('css');
 		for (const [groupKey, groupName] of Object.entries(groups)) {
 			if (groupKey === 'all') continue;
 			menu.addItem(item => {
@@ -280,7 +279,7 @@ export class CSSPageEnhancer {
 			);
 			await customCss.requestLoadSnippets();
 			await Promise.resolve(asInternalApp(this.app).openWithDefaultApp(filePath));
-			new Notice(`CSS 片段“${snippetName}”已创建并打开`);
+			new Notice(`CSS 片段 "${snippetName}" 已创建并打开`);
 			this.requestOfficialReload();
 		} catch (error) {
 			console.error('创建 CSS 片段失败:', error);
@@ -304,7 +303,7 @@ export class CSSPageEnhancer {
 
 		const customCss = asInternalApp(this.app).customCss;
 		if (customCss.snippets.includes(newName)) {
-			new Notice(`CSS 片段“${newName}”已存在`);
+			new Notice(`CSS 片段 "${newName}" 已存在`);
 			return;
 		}
 
@@ -320,7 +319,7 @@ export class CSSPageEnhancer {
 
 			await customCss.requestLoadSnippets();
 			await this.dataStorage.moveCSSSnippetMetadata(oldName, newName);
-			new Notice(`CSS 片段已重命名为“${newName}”`);
+			new Notice(`CSS 片段已重命名为 "${newName}"`);
 			this.requestOfficialReload();
 		} catch (error) {
 			console.error('重命名 CSS 片段失败:', error);
@@ -332,7 +331,7 @@ export class CSSPageEnhancer {
 		const confirmed = await requestConfirmation(
 			this.app,
 			'删除 CSS 片段',
-			`确定要删除 CSS 片段“${snippetName}”吗？此操作无法撤销。`,
+			`确定要删除 CSS 片段 "${snippetName}" 吗? 此操作无法撤销.`,
 			'删除'
 		);
 		if (!confirmed) return;
@@ -345,7 +344,7 @@ export class CSSPageEnhancer {
 			await this.app.vault.adapter.remove(customCss.getSnippetPath(snippetName));
 			await this.dataStorage.deleteCSSSnippetMetadata(snippetName);
 			await customCss.requestLoadSnippets();
-			new Notice(`CSS 片段“${snippetName}”已删除`);
+			new Notice(`CSS 片段 "${snippetName}" 已删除`);
 			this.requestOfficialReload();
 		} catch (error) {
 			console.error('删除 CSS 片段失败:', error);
@@ -357,7 +356,7 @@ export class CSSPageEnhancer {
 		const cleanName = value.trim().replace(/\.css$/i, '');
 		if (!cleanName) return '请输入 CSS 片段名称';
 		if (!/^[a-zA-Z0-9_\-\u4e00-\u9fa5\s]+$/.test(cleanName)) {
-			return '名称只能包含字母、数字、下划线、横线、中文和空格';
+			return '名称只能包含字母, 数字, 下划线, 横线, 中文和空格';
 		}
 		return null;
 	}
@@ -389,7 +388,7 @@ export class CSSPageEnhancer {
 			rowEl.toggleClass('albus-psm-filtered-out', !(matchesStatus && matchesGroup));
 		}
 
-		this.filterBar.updateGroups(this.dataStorage.getSettings().cssGroups, counts);
+		this.filterBar.updateGroups(this.dataStorage.getGroups('css'), counts);
 	}
 
 	private refreshRow(rowEl: HTMLElement): void {
@@ -404,7 +403,7 @@ export class CSSPageEnhancer {
 		const hasActions = Boolean(rowEl.querySelector(
 			`[data-albus-psm-owned="${ROW_OWNER}"][data-albus-psm-role="${ACTIONS_ROLE}"]`
 		));
-		const groupName = this.dataStorage.getSettings().cssGroups[groupKey];
+		const groupName = this.dataStorage.getGroups('css')[groupKey];
 		const needsBadge = Boolean(groupName && groupKey !== 'all');
 		const hasBadge = Boolean(rowEl.querySelector(
 			`.albus-psm-group-badge[data-albus-psm-owned="${ROW_OWNER}"]`

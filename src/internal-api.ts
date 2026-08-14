@@ -1,4 +1,4 @@
-import { App, PluginManifest } from 'obsidian';
+import type { App, PluginManifest } from 'obsidian';
 
 interface InternalPluginManager {
 	manifests: Record<string, PluginManifest>;

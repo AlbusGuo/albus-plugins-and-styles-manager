@@ -17,4 +17,5 @@ export interface PluginsStylesManagerSettings {
 	cssSnippetMetadata: Record<string, CSSSnippetMetadata>;
 }
 
+export type ManagedGroupType = 'plugin' | 'css';
 export type FilterType = 'all' | 'enabled' | 'disabled';

@@ -1,17 +1,17 @@
-import { readFileSync, writeFileSync } from "fs";
+import { readFileSync, writeFileSync } from 'node:fs';
 
 const targetVersion = process.env.npm_package_version;
+if (!targetVersion) throw new Error('Missing npm package version.');
 
-// read minAppVersion from manifest.json and bump version to target version
-const manifest = JSON.parse(readFileSync("manifest.json", "utf8"));
-const { minAppVersion } = manifest;
+const readJson = path => JSON.parse(readFileSync(path, 'utf8'));
+const writeJson = (path, value) => {
+	writeFileSync(path, `${JSON.stringify(value, null, '\t')}\n`);
+};
+
+const manifest = readJson('manifest.json');
 manifest.version = targetVersion;
-writeFileSync("manifest.json", JSON.stringify(manifest, null, "\t"));
+writeJson('manifest.json', manifest);
 
-// update versions.json with target version and minAppVersion from manifest.json
-// but only if the target version is not already in versions.json
-const versions = JSON.parse(readFileSync('versions.json', 'utf8'));
-if (!Object.values(versions).includes(minAppVersion)) {
-    versions[targetVersion] = minAppVersion;
-    writeFileSync('versions.json', JSON.stringify(versions, null, '\t'));
-}
+const versions = readJson('versions.json');
+versions[targetVersion] = manifest.minAppVersion;
+writeJson('versions.json', versions);
