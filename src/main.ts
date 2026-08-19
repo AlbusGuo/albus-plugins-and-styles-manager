@@ -10,10 +10,15 @@ export default class PluginsStylesManagerPlugin extends Plugin {
 	private unloaded = false;
 	private toggleRegistrationScheduled = false;
 	private toggleCommandsRegistered = false;
+	private readonly cssSnippetCommandIds = new Map<string, string>();
 
 	onload(): void {
 		this.dataStorage = new DataStorage(this);
-		this.settingsIntegration = new SettingsIntegrationController(this.app, this.dataStorage);
+		this.settingsIntegration = new SettingsIntegrationController(
+			this.app,
+			this.dataStorage,
+			() => this.syncCSSSnippetToggleCommands()
+		);
 		this.register(() => {
 			this.unloaded = true;
 			this.settingsIntegration.stop();
@@ -74,7 +79,7 @@ export default class PluginsStylesManagerPlugin extends Plugin {
 			if (this.unloaded || this.toggleCommandsRegistered) return;
 			this.toggleCommandsRegistered = true;
 			this.registerPluginToggleCommands();
-			this.registerCSSSnippetToggleCommands();
+			this.syncCSSSnippetToggleCommands();
 		};
 
 		if (typeof view.requestIdleCallback === 'function') {
@@ -98,15 +103,27 @@ export default class PluginsStylesManagerPlugin extends Plugin {
 		}
 	}
 
-	private registerCSSSnippetToggleCommands(): void {
-		const customCss = asInternalApp(this.app).customCss;
+	private syncCSSSnippetToggleCommands(): void {
+		if (!this.toggleCommandsRegistered || this.unloaded) return;
 
-		for (const snippetName of customCss.snippets) {
+		const customCss = asInternalApp(this.app).customCss;
+		const snippetNames = new Set(customCss.snippets);
+
+		for (const [snippetName, commandId] of this.cssSnippetCommandIds) {
+			if (snippetNames.has(snippetName)) continue;
+			this.removeCommand(commandId);
+			this.cssSnippetCommandIds.delete(snippetName);
+		}
+
+		for (const snippetName of snippetNames) {
+			if (this.cssSnippetCommandIds.has(snippetName)) continue;
+			const commandId = this.createCSSSnippetCommandId(snippetName);
 			this.addCommand({
-				id: `toggle-css-snippet-${this.sanitizeId(snippetName)}`,
+				id: commandId,
 				name: `切换 CSS 片段: ${snippetName}`,
 				callback: () => this.toggleCSSSnippet(snippetName)
 			});
+			this.cssSnippetCommandIds.set(snippetName, commandId);
 		}
 	}
 
@@ -126,10 +143,14 @@ export default class PluginsStylesManagerPlugin extends Plugin {
 		await customCss.requestLoadSnippets();
 	}
 
-	private sanitizeId(name: string): string {
-		return name.toLowerCase()
-			.replace(/\s+/g, '-')
-			.replace(/[^a-z0-9-]/g, '')
-			.replace(/-+/g, '-');
+	private createCSSSnippetCommandId(snippetName: string): string {
+		if (/^[a-z0-9]+(?: [a-z0-9]+)*$/i.test(snippetName)) {
+			return `toggle-css-snippet-${snippetName.toLowerCase().replace(/ /g, '-')}`;
+		}
+		const encodedName = Array.from(
+			snippetName,
+			character => character.codePointAt(0)!.toString(36)
+		).join('-');
+		return `toggle-css-snippet-encoded-${encodedName}`;
 	}
 }

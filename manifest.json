@@ -1,7 +1,7 @@
 {
 	"id": "albus-psm",
 	"name": "Plugins & Styles Manager",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"minAppVersion": "1.13.6",
 	"description": "Add groups and notes to Obsidian's plugin and CSS snippet settings.",
 	"author": "Albus",

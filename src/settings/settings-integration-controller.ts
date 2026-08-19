@@ -39,10 +39,12 @@ export class SettingsIntegrationController {
 	private cssNavigationFrameId: number | null = null;
 	private patchedMethods: PatchedMethod[] = [];
 	private cleanupSignature = '';
+	private cssSnippetSignature = '';
 
 	constructor(
 		private readonly app: App,
-		private readonly dataStorage: DataStorage
+		private readonly dataStorage: DataStorage,
+		private readonly onCSSSnippetsChanged: () => void
 	) {
 		this.pluginEnhancer = new PluginPageEnhancer(app, dataStorage);
 		this.cssEnhancer = new CSSPageEnhancer(
@@ -88,6 +90,7 @@ export class SettingsIntegrationController {
 		this.pluginEnhancer.cleanup();
 		this.cssEnhancer.cleanup();
 		this.cleanupSignature = '';
+		this.cssSnippetSignature = '';
 		this.setting = null;
 	}
 
@@ -221,6 +224,11 @@ export class SettingsIntegrationController {
 		const internalApp = asInternalApp(this.app);
 		const pluginIds = Object.keys(internalApp.plugins.manifests).sort();
 		const snippetNames = [...internalApp.customCss.snippets].sort();
+		const cssSnippetSignature = JSON.stringify(snippetNames);
+		if (cssSnippetSignature !== this.cssSnippetSignature) {
+			this.cssSnippetSignature = cssSnippetSignature;
+			this.onCSSSnippetsChanged();
+		}
 		const signature = JSON.stringify([pluginIds, snippetNames]);
 		if (signature === this.cleanupSignature) return;
 
