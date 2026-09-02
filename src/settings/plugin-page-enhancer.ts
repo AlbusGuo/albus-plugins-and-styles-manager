@@ -163,7 +163,7 @@ export class PluginPageEnhancer {
 			.setTooltip('设置分组');
 		button.extraSettingsEl.setAttribute('data-albus-psm-owned', ROW_OWNER);
 		button.extraSettingsEl.setAttribute('data-albus-psm-role', GROUP_BUTTON_ROLE);
-		controlEl.prepend(button.extraSettingsEl);
+		this.placeGroupButton(controlEl, button.extraSettingsEl);
 		button.extraSettingsEl.addEventListener('click', event => {
 			event.preventDefault();
 			event.stopPropagation();
@@ -220,15 +220,46 @@ export class PluginPageEnhancer {
 		const hasNote = Boolean(rowEl.querySelector(
 			`.albus-psm-note-field[data-albus-psm-owned="${ROW_OWNER}"]`
 		));
-		const hasGroupButton = Boolean(rowEl.querySelector(
+		const groupButton = rowEl.querySelector<HTMLElement>(
 			`[data-albus-psm-owned="${ROW_OWNER}"][data-albus-psm-role="${GROUP_BUTTON_ROLE}"]`
-		));
+		);
+		const controlEl = rowEl.querySelector<HTMLElement>('.setting-item-control');
+		const hasOrderedGroupButton = Boolean(
+			groupButton
+			&& controlEl
+			&& this.isGroupButtonOrdered(controlEl, groupButton)
+		);
 		const groupName = this.dataStorage.getGroups('plugin')[groupKey];
 		const needsBadge = Boolean(groupName && groupKey !== 'all');
 		const hasBadge = Boolean(rowEl.querySelector(
 			`.albus-psm-group-badge[data-albus-psm-owned="${ROW_OWNER}"]`
 		));
-		return hasNote && hasGroupButton && hasBadge === needsBadge;
+		return hasNote && hasOrderedGroupButton && hasBadge === needsBadge;
+	}
+
+	private placeGroupButton(controlEl: HTMLElement, groupButtonEl: HTMLElement): void {
+		const updateButtonEl = this.findUpdateButton(controlEl);
+		if (updateButtonEl) {
+			updateButtonEl.after(groupButtonEl);
+		} else {
+			controlEl.prepend(groupButtonEl);
+		}
+	}
+
+	private isGroupButtonOrdered(
+		controlEl: HTMLElement,
+		groupButtonEl: HTMLElement
+	): boolean {
+		const updateButtonEl = this.findUpdateButton(controlEl);
+		return updateButtonEl
+			? groupButtonEl.previousElementSibling === updateButtonEl
+			: controlEl.firstElementChild === groupButtonEl;
+	}
+
+	private findUpdateButton(controlEl: HTMLElement): HTMLElement | null {
+		return Array.from(controlEl.children).find(
+			element => element.tagName === 'BUTTON'
+		) as HTMLElement | undefined ?? null;
 	}
 
 	private removeRowEnhancement(rowEl: HTMLElement): void {
